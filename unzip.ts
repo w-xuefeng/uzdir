@@ -106,11 +106,11 @@ class ZipExtractor {
           const stat = fs.statSync(filterFile);
           if (stat.isFile()) {
             fs.unlinkSync(filterFile);
-            console.log(`🙅 已过滤文件：${filterFile}`);
+            console.log(`🙅 已过滤文件：${this.filterFile}`);
           }
           if (stat.isDirectory()) {
             fs.rmdirSync(filterFile, { recursive: true });
-            console.log(`🙅 已过滤目录：${filterFile}`);
+            console.log(`🙅 已过滤目录：${this.filterFile}`);
           }
         }
       }
