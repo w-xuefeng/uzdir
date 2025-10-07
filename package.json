@@ -1,0 +1,22 @@
+{
+  "name": "unzipper",
+  "version": "1.0.0",
+  "scripts": {
+    "unzip": "bun run unzip.ts",
+    "test": "bun unzip -i test/from -o test/to -p 123456 --filter filter.txt"
+  },
+  "bin": {
+    "unzipper": "unzip.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "@types/node-7z": "^2.1.10",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "7zip-bin": "^5.2.0",
+    "commander": "^12.0.0",
+    "node-7z": "^3.0.0"
+  },
+  "type": "module"
+}
