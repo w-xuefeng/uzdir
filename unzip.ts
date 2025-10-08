@@ -248,7 +248,7 @@ program
   .requiredOption("-i, --input <dir>", "输入目录路径")
   .requiredOption("-o, --output <dir>", "输出目录路径")
   .option("-p, --password <password>", "解压密码", "")
-  .option("--filter <filepath>", "要过滤的文件路径（ZIP内相对路径）")
+  .option("--filter <filtepath>", "要过滤的文件路径（ZIP内相对路径）")
   .action(async (options) => {
     try {
       const extractor = new ZipExtractor(
