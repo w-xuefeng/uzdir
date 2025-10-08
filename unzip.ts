@@ -120,6 +120,8 @@ class ZipExtractor {
 
     console.log(`🔍 处理文件: [${currentIndex}/${total}]${relativePath}`);
 
+    const startTime = Date.now();
+
     try {
       await extractWithNode7z(zipFilePath, outputPath, password);
       if (this.filterFile) {
@@ -142,13 +144,19 @@ class ZipExtractor {
             this.outputDir,
             outputPath,
           )
-        }\n`,
+        }`,
       );
       this.processedCount++;
+      console.log(
+        `⌛ 耗时: ${formatMillisecondsToTime(Date.now() - startTime)}\n`,
+      );
       return true;
     } catch (error) {
       console.error(`❌ 解压失败: ${relativePath}`, error);
       this.errorCount++;
+      console.log(
+        `⌛ 耗时: ${formatMillisecondsToTime(Date.now() - startTime)}\n`,
+      );
       return false;
     }
   }
