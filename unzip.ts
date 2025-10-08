@@ -6,6 +6,22 @@ import path from "path";
 import pkg from "./package.json" with { type: "json" };
 import { extractWithNode7z } from "./7zip";
 
+function padZero(num: number, count = 2) {
+  return num.toString().padStart(count, "0");
+}
+
+function formatMillisecondsToTime(milliseconds: number | string) {
+  const totalSeconds = Math.floor(Number(milliseconds) / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const formattedTime = `${padZero(hours)}:${padZero(minutes)}:${
+    padZero(seconds)
+  }`;
+  return formattedTime;
+}
+
 /**
  * ZIP文件解压工具
  * 支持递归解压目录下的所有ZIP文件，保持目录结构
@@ -17,12 +33,14 @@ class ZipExtractor {
   private filterFile: string | null;
   private processedCount: number = 0;
   private errorCount: number = 0;
+  private startTime: Date | null = null;
+  private endTime: Date | null = null;
 
   constructor(
     inputDir: string,
     outputDir: string,
     password: string,
-    filterFile: string | null = null
+    filterFile: string | null = null,
   ) {
     this.inputDir = path.resolve(inputDir);
     this.outputDir = path.resolve(outputDir);
@@ -91,7 +109,11 @@ class ZipExtractor {
   /**
    * 解压单个ZIP文件
    */
-  private async extractZip(zipFilePath: string, currentIndex: number, total: number): Promise<boolean> {
+  private async extractZip(
+    zipFilePath: string,
+    currentIndex: number,
+    total: number,
+  ): Promise<boolean> {
     const relativePath = this.getRelativePath(zipFilePath);
     const outputPath = this.createOutputStructure(relativePath);
     let password = this.password;
@@ -142,6 +164,7 @@ class ZipExtractor {
     if (this.filterFile) {
       console.log(`⏭️  过滤文件: ${this.filterFile}`);
     }
+    this.startTime = new Date(Date.now());
     console.log("─".repeat(50));
 
     // 检查输入目录是否存在
@@ -177,6 +200,32 @@ class ZipExtractor {
     if (this.errorCount > 0) {
       console.log(`❌ 失败: ${this.errorCount} 个文件`);
     }
+
+    this.endTime = new Date(Date.now());
+
+    console.log(
+      `🕐︎ 开始时间: ${
+        this.startTime.toLocaleString("zh-CN", {
+          timeZone: "Asia/Shanghai",
+          hour12: false,
+        })
+      }`,
+    );
+    console.log(
+      `🕜︎ 完成时间: ${
+        this.endTime.toLocaleString("zh-CN", {
+          timeZone: "Asia/Shanghai",
+          hour12: false,
+        })
+      }`,
+    );
+    console.log(
+      `⌛ 总耗时: ${
+        formatMillisecondsToTime(
+          this.endTime.getTime() - this.startTime.getTime(),
+        )
+      }`,
+    );
   }
 }
 
@@ -198,7 +247,7 @@ program
         options.input,
         options.output,
         options.password,
-        options.filter || null
+        options.filter || null,
       );
 
       await extractor.extractAll();
