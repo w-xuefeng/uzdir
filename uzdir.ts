@@ -347,10 +347,10 @@ class UZDir {
     console.log(`🔁 实际并发数: ${concurrency}`);
     console.log("─".repeat(50));
 
-    for (let i = 0, j = 1; i < total; i += concurrency, j++) {
+    for (let i = 0; i < total; i += concurrency) {
       const batch = zipFiles.slice(i, i + concurrency);
       const batchPromises = batch.map((zipFile, index) =>
-        this.extractZip(zipFile, i + index + 1, total, j)
+        this.extractZip(zipFile, i + index + 1, total, index + 1)
       );
       await Promise.allSettled(batchPromises);
     }
