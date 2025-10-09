@@ -393,7 +393,7 @@ class UZDir {
     console.log(`📦 找到 ${zipFiles.length} 个压缩文件`);
     const total = zipFiles.length;
 
-    // 使用 Promise.allSettled 并发解压文件
+    // 使用连续任务调度实现并发
     const concurrency = Math.min(this.maxConcurrency, total);
     console.log(`🔁 实际并发数: ${concurrency}`);
     console.log("─".repeat(50));
@@ -409,19 +409,41 @@ class UZDir {
         }),
     );
 
-    for (let i = 0; i < total; i += concurrency) {
-      const batch = zipFiles.slice(i, i + concurrency);
-      const batchPromises = batch.map((zipFile, index) =>
-        this.extractZip(
-          zipFile,
-          i + index + 1,
-          total,
-          index + 1,
-          progressBars[index],
-        )
-      );
-      await Promise.allSettled(batchPromises);
-    }
+    // 实现连续任务调度逻辑 - 当任何任务完成时，如果有剩余任务则立即开始执行
+    let taskIndex = 0;
+
+    // 创建任务执行函数
+    const runTask = (concurrencyIndex: number): Promise<void> => {
+      // 如果所有任务都已完成，返回resolved promise
+      if (taskIndex >= total) {
+        return Promise.resolve();
+      }
+
+      // 获取当前任务索引并递增
+      const currentTaskIndex = taskIndex++;
+
+      // 执行当前任务
+      return this.extractZip(
+        zipFiles[currentTaskIndex],
+        currentTaskIndex + 1,
+        total,
+        concurrencyIndex + 1,
+        progressBars[concurrencyIndex],
+      ).then(() => {
+        // 当前任务完成后，继续执行下一个任务（如果有）
+        return runTask(concurrencyIndex);
+      }).catch(() => {
+        // 即使任务失败也要继续执行下一个任务
+        return runTask(concurrencyIndex);
+      });
+    };
+
+    // 启动初始并发任务
+    const workers = Array.from({ length: concurrency }, (_, i) => runTask(i));
+
+    // 等待所有任务完成
+    await Promise.allSettled(workers);
+
     progressBars.forEach((bar) => bar.stop());
     this.multiProgressBar.stop();
 
