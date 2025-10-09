@@ -3,6 +3,7 @@
 import { Command } from "commander";
 import fs from "fs";
 import path from "path";
+import os from "os";
 import pkg from "./package.json" with { type: "json" };
 import { extractWithNode7z } from "./7zip";
 
@@ -31,6 +32,7 @@ class ZipExtractor {
   private outputDir: string;
   private password: string;
   private filterFile: string | null;
+  private maxConcurrency: number;
   private processedCount: number = 0;
   private errorCount: number = 0;
   private startTime: Date | null = null;
@@ -41,11 +43,13 @@ class ZipExtractor {
     outputDir: string,
     password: string,
     filterFile: string | null = null,
+    maxConcurrency: number = os.cpus().length,
   ) {
     this.inputDir = path.resolve(inputDir);
     this.outputDir = path.resolve(outputDir);
     this.password = password;
     this.filterFile = filterFile;
+    this.maxConcurrency = maxConcurrency;
   }
 
   /**
@@ -113,49 +117,48 @@ class ZipExtractor {
     zipFilePath: string,
     currentIndex: number,
     total: number,
+    concurrencyNumber: number = 1
   ): Promise<boolean> {
     const relativePath = this.getRelativePath(zipFilePath);
     const outputPath = this.createOutputStructure(relativePath);
     let password = this.password;
+    let indexFlag = `(线程${concurrencyNumber})[${currentIndex}/${total}]`;
 
-    console.log(`🔍 处理文件: [${currentIndex}/${total}]${relativePath}`);
+    console.log(`${indexFlag} 🔍 处理文件: ${relativePath}`);
 
     const startTime = Date.now();
 
     try {
-      await extractWithNode7z(zipFilePath, outputPath, password);
+      await extractWithNode7z(zipFilePath, outputPath, password, indexFlag, relativePath);
       if (this.filterFile) {
         const filterFile = path.join(outputPath, this.filterFile);
         if (fs.existsSync(filterFile)) {
           const stat = fs.statSync(filterFile);
           if (stat.isFile()) {
             fs.unlinkSync(filterFile);
-            console.log(`🙅 已过滤文件：${this.filterFile}`);
+            console.log(`${indexFlag} 🙅 已过滤文件：${this.filterFile}`);
           }
           if (stat.isDirectory()) {
             fs.rmdirSync(filterFile, { recursive: true });
-            console.log(`🙅 已过滤目录：${this.filterFile}`);
+            console.log(`${indexFlag} 🙅 已过滤目录：${this.filterFile}`);
           }
         }
       }
       console.log(
-        `✅ 成功解压: ${relativePath} → ${
+        `${indexFlag} ✅ 成功解压: ${relativePath} → ${
           path.relative(
             this.outputDir,
             outputPath,
           )
-        }`,
+        } 耗时 ${formatMillisecondsToTime(Date.now() - startTime)}`,
       );
       this.processedCount++;
-      console.log(
-        `⌛ 耗时: ${formatMillisecondsToTime(Date.now() - startTime)}\n`,
-      );
       return true;
     } catch (error) {
-      console.error(`❌ 解压失败: ${relativePath}`, error);
+      console.error(`${indexFlag} ❌ 解压失败: ${relativePath}`, error);
       this.errorCount++;
       console.log(
-        `⌛ 耗时: ${formatMillisecondsToTime(Date.now() - startTime)}\n`,
+        `${indexFlag} ⌛ 耗时: ${formatMillisecondsToTime(Date.now() - startTime)}`,
       );
       return false;
     }
@@ -172,6 +175,7 @@ class ZipExtractor {
     if (this.filterFile) {
       console.log(`⏭️  过滤文件: ${this.filterFile}`);
     }
+    console.log(`🔁 最大并发数: ${this.maxConcurrency}`);
     this.startTime = new Date(Date.now());
     console.log("─".repeat(50));
 
@@ -193,12 +197,18 @@ class ZipExtractor {
 
     console.log(`📦 找到 ${zipFiles.length} 个ZIP文件`);
     const total = zipFiles.length;
-    let index = 1;
 
-    // 逐个解压文件
-    for (const zipFile of zipFiles) {
-      await this.extractZip(zipFile, index, total);
-      index++;
+    // 使用Promise.allSettled并发解压文件
+    const concurrency = Math.min(this.maxConcurrency, total);
+    console.log(`🔁 实际并发数: ${concurrency}`);
+
+
+    for (let i = 0, j = 1; i < total; i += concurrency, j++) {
+      const batch = zipFiles.slice(i, i + concurrency);
+      const batchPromises = batch.map((zipFile, index) =>
+        this.extractZip(zipFile, i + index + 1, total, j)
+      );
+      await Promise.allSettled(batchPromises);
     }
 
     // 输出总结
@@ -249,6 +259,7 @@ program
   .requiredOption("-o, --output <dir>", "输出目录路径")
   .option("-p, --password <password>", "解压密码", "")
   .option("--filter <filterpath>", "要过滤的文件路径（ZIP内相对路径）")
+  .option("--maxConcurrency <number>", "最大并发数，默认为CPU核心数", `${os.cpus().length}`)
   .action(async (options) => {
     try {
       const extractor = new ZipExtractor(
@@ -256,6 +267,7 @@ program
         options.output,
         options.password,
         options.filter || null,
+        parseInt(options.maxConcurrency) || os.cpus().length,
       );
 
       await extractor.extractAll();

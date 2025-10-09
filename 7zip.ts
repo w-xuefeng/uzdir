@@ -4,7 +4,9 @@ import { path7za } from "7zip-bin";
 export function extractWithNode7z(
   zipFilePath: string,
   outputDir: string,
-  password: string
+  password: string,
+  indexFlag: string,
+  relativePath: string
 ) {
   const { resolve, reject, promise } = Promise.withResolvers();
 
@@ -16,20 +18,20 @@ export function extractWithNode7z(
     });
 
     stream.on("data", (data) => {
-      console.log("🔍 [7z]正在解压:", data.file);
+      console.log(`${indexFlag} 🔍 [7z]正在解压:`, data.file);
     });
 
     stream.on("end", () => {
-      console.log("👌 [7z]解压完成");
+      console.log(`${indexFlag} 👌 [7z]解压完成: ${relativePath}`);
       resolve(true);
     });
 
     stream.on("error", (err) => {
-      console.error("❌ [7z]解压出错:", err);
+      console.error(`${indexFlag} ❌ [7z]解压出错:`, err);
       reject(err);
     });
   } catch (error) {
-    console.error("❌ [7z]创建解压流失败:", error);
+    console.error(`${indexFlag} ❌ [7z]创建解压流失败:`, error);
     reject(error);
   }
 
