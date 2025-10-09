@@ -1,6 +1,6 @@
 {
   "name": "uzdir",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "uzdir": "bun run uzdir.ts",
     "clean": "rimraf test/to",
@@ -8,6 +8,10 @@
   },
   "bin": {
     "uzdir": "uzdir.ts"
+  },
+  "author": {
+    "name": "w-xuefeng",
+    "email": "w-xuefeng@outlook.com"
   },
   "devDependencies": {
     "@types/node": "^24.7.0",

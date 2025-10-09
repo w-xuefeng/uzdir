@@ -1,5 +1,14 @@
 import * as node7z from "node-7z";
 import { path7za } from "7zip-bin";
+import { chmodSync } from "fs";
+
+// 确保 path7za 具有执行权限
+try {
+  chmodSync(path7za, 0o755);
+  console.log("👌 7zip-bin 执行权限已设置");
+} catch (error) {
+  console.warn("⚠️ 无法设置7za执行权限:", (error as Error).message);
+}
 
 export function extractWithNode7z(
   zipFilePath: string,
