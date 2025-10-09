@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "uzdir": "bun run uzdir.ts",
-    "test": "bun uzdir -i test/from -o test/to -p 123456 --filter filter.txt --zipFormat '.zip,.7z'"
+    "clean": "rimraf test/to",
+    "test": "bun clean && bun uzdir -i test/from -o test/to -p 123456 --passwordMap test/password.json --filter 'filter.txt,*/**/.DS_Store' --zipFormat '.zip,.7z'"
   },
   "bin": {
     "uzdir": "uzdir.ts"
@@ -11,11 +12,13 @@
   "devDependencies": {
     "@types/node": "^24.7.0",
     "@types/node-7z": "^2.1.10",
+    "rimraf": "^6.0.1",
     "typescript": "^5.0.0"
   },
   "dependencies": {
     "7zip-bin": "^5.2.0",
     "commander": "^12.0.0",
+    "glob": "^11.0.3",
     "node-7z": "^3.0.0"
   },
   "type": "module"

@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import pkg from "./package.json" with { type: "json" };
+import { glob } from "glob";
 import { extractWithNode7z } from "./7zip";
 
 function padZero(num: number, count = 2) {
@@ -38,6 +39,7 @@ class UZDir {
   private errorCount: number = 0;
   private startTime: Date | null = null;
   private endTime: Date | null = null;
+  private passwordMap: Record<string, string> | null = null;
 
   constructor(
     inputDir: string,
@@ -46,6 +48,7 @@ class UZDir {
     filterFile: string | null = null,
     maxConcurrency: number = os.cpus().length,
     zipFormat: string = ".zip",
+    passwordMapPath: string | null = null,
   ) {
     this.inputDir = path.resolve(inputDir);
     this.outputDir = path.resolve(outputDir);
@@ -53,6 +56,21 @@ class UZDir {
     this.filterFile = filterFile;
     this.maxConcurrency = maxConcurrency;
     this.zipFormat = zipFormat;
+
+    // 如果提供了passwordMapPath，则加载密码映射文件
+    if (passwordMapPath) {
+      try {
+        const passwordMapContent = fs.readFileSync(passwordMapPath, "utf-8");
+        this.passwordMap = JSON.parse(passwordMapContent);
+        console.log(`🔐 已加载密码映射文件: ${passwordMapPath}`);
+      } catch (error) {
+        console.error(
+          `❌ 无法读取或解析密码映射文件: ${passwordMapPath}`,
+          error,
+        );
+        process.exit(1);
+      }
+    }
   }
 
   /**
@@ -87,7 +105,9 @@ class UZDir {
    */
   private isZipFile(filePath: string): boolean {
     const ext = path.extname(filePath).toLowerCase();
-    return this.zipFormat.replace(/，/g, ',').split(',').map(format => format.trim()).includes(ext);
+    return this.zipFormat.replace(/，/g, ",").split(",").map((format) =>
+      format.trim()
+    ).includes(ext);
   }
 
   /**
@@ -95,6 +115,48 @@ class UZDir {
    */
   private getRelativePath(filePath: string): string {
     return path.relative(this.inputDir, filePath);
+  }
+
+  /**
+   * 获取指定文件的密码
+   * 匹配规则：
+   * 1. 优先匹配完整绝对路径
+   * 2. 然后匹配部分路径
+   * 3. 其次匹配文件名
+   * 4. 最后匹配文件格式（扩展名）
+   * 5. 如果都没有结果，则使用 this.password
+   */
+  private getPasswordForFile(filePath: string): string {
+    if (!this.passwordMap) {
+      return this.password;
+    }
+
+    // 1. 完整绝对路径匹配
+    if (this.passwordMap.hasOwnProperty(filePath)) {
+      return this.passwordMap[filePath];
+    }
+
+    // 2. 部分路径匹配
+    for (const key in this.passwordMap) {
+      if (filePath.includes(key)) {
+        return this.passwordMap[key];
+      }
+    }
+
+    // 3. 文件名匹配
+    const fileName = path.basename(filePath);
+    if (this.passwordMap.hasOwnProperty(fileName)) {
+      return this.passwordMap[fileName];
+    }
+
+    // 4. 文件格式匹配（扩展名）
+    const fileExt = path.extname(filePath);
+    if (this.passwordMap.hasOwnProperty(fileExt)) {
+      return this.passwordMap[fileExt];
+    }
+
+    // 5. 使用默认密码
+    return this.password;
   }
 
   /**
@@ -114,39 +176,102 @@ class UZDir {
   }
 
   /**
+   * 应用glob模式过滤
+   */
+  private async applyGlobFilter(
+    outputPath: string,
+    globPattern: string,
+    indexFlag: string,
+  ): Promise<void> {
+    try {
+      const matchedFiles = await glob(globPattern, {
+        cwd: outputPath,
+        absolute: true,
+        nodir: false,
+      });
+
+      for (const file of matchedFiles) {
+        try {
+          const stat = fs.statSync(file);
+          if (stat.isFile()) {
+            fs.unlinkSync(file);
+            console.log(
+              `${indexFlag} 🙅 已过滤文件：${path.relative(outputPath, file)}`,
+            );
+          } else if (stat.isDirectory()) {
+            fs.rmdirSync(file, { recursive: true });
+            console.log(
+              `${indexFlag} 🙅 已过滤目录：${path.relative(outputPath, file)}`,
+            );
+          }
+        } catch (error) {
+          console.error(`${indexFlag} ❌ 删除文件/目录时出错: ${file}`, error);
+        }
+      }
+    } catch (error) {
+      console.error(`${indexFlag} ❌ Glob匹配出错: ${globPattern}`, error);
+    }
+  }
+
+  private async removeFilters(outputPath: string, indexFlag: string) {
+    if (this.filterFile) {
+      // 支持多个过滤文件/目录，使用逗号分隔
+      const filters = this.filterFile.replace(/，/g, ',').split(",").map((f) => f.trim());
+      for (const filter of filters) {
+        // 如果是 glob 模式 (包含 * 或 **)
+        if (filter.includes("*")) {
+          // 使用 glob 库处理
+          await this.applyGlobFilter(outputPath, filter, indexFlag);
+        } else {
+          // 精确路径匹配
+          const filterFile = path.join(outputPath, filter);
+          if (fs.existsSync(filterFile)) {
+            const stat = fs.statSync(filterFile);
+            if (stat.isFile()) {
+              fs.unlinkSync(filterFile);
+              console.log(`${indexFlag} 🙅 已过滤文件：${filter}`);
+            }
+            if (stat.isDirectory()) {
+              fs.rmdirSync(filterFile, { recursive: true });
+              console.log(`${indexFlag} 🙅 已过滤目录：${filter}`);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * 解压单个ZIP文件
    */
   private async extractZip(
     zipFilePath: string,
     currentIndex: number,
     total: number,
-    concurrencyNumber: number = 1
+    concurrencyNumber: number = 1,
   ): Promise<boolean> {
     const relativePath = this.getRelativePath(zipFilePath);
     const outputPath = this.createOutputStructure(relativePath);
-    let password = this.password;
+    const password = this.getPasswordForFile(zipFilePath);
     let indexFlag = `(线程${concurrencyNumber})[${currentIndex}/${total}]`;
 
-    console.log(`${indexFlag} 🔍 处理文件: ${relativePath}`);
+    console.log(
+      `${indexFlag} 🔍 处理文件: ${relativePath}${
+        password ? " (使用密码)" : ""
+      }`,
+    );
 
     const startTime = Date.now();
 
     try {
-      await extractWithNode7z(zipFilePath, outputPath, password, indexFlag, relativePath);
-      if (this.filterFile) {
-        const filterFile = path.join(outputPath, this.filterFile);
-        if (fs.existsSync(filterFile)) {
-          const stat = fs.statSync(filterFile);
-          if (stat.isFile()) {
-            fs.unlinkSync(filterFile);
-            console.log(`${indexFlag} 🙅 已过滤文件：${this.filterFile}`);
-          }
-          if (stat.isDirectory()) {
-            fs.rmdirSync(filterFile, { recursive: true });
-            console.log(`${indexFlag} 🙅 已过滤目录：${this.filterFile}`);
-          }
-        }
-      }
+      await extractWithNode7z(
+        zipFilePath,
+        outputPath,
+        password,
+        indexFlag,
+        relativePath,
+      );
+      await this.removeFilters(outputPath, indexFlag);
       console.log(
         `${indexFlag} ✅ 成功解压: ${relativePath} → ${
           path.relative(
@@ -161,7 +286,9 @@ class UZDir {
       console.error(`${indexFlag} ❌ 解压失败: ${relativePath}`, error);
       this.errorCount++;
       console.log(
-        `${indexFlag} ⌛ 耗时: ${formatMillisecondsToTime(Date.now() - startTime)}`,
+        `${indexFlag} ⌛ 耗时: ${
+          formatMillisecondsToTime(Date.now() - startTime)
+        }`,
       );
       return false;
     }
@@ -175,7 +302,14 @@ class UZDir {
     console.log(`📁 输入目录: ${this.inputDir}`);
     console.log(`📂 输出目录: ${this.outputDir}`);
     console.log(`🗂️  待解压文件格式: ${this.zipFormat}`);
-    console.log(`🔑 使用密码: ${this.password ? "***" : "无"}`);
+    console.log(`🔑 使用默认密码: ${this.password ? "***" : "无"}`);
+    if (this.passwordMap) {
+      console.log(
+        `📖 使用密码映射文件，包含 ${
+          Object.keys(this.passwordMap).length
+        } 个文件的专用密码`,
+      );
+    }
     if (this.filterFile) {
       console.log(`⏭️  过滤文件: ${this.filterFile}`);
     }
@@ -256,15 +390,29 @@ const program = new Command();
 
 program
   .name("uzdir")
-  .description("递归解压目录下的所有指定类型的压缩文件（默认仅解压.zip），并保持目录结构")
+  .description(
+    "递归解压目录下的所有指定类型的压缩文件（默认仅解压.zip），并保持目录结构",
+  )
   .version(pkg.version, "-v, --version")
   .version(pkg.version, "-V, --VERSION")
   .requiredOption("-i, --input <dir>", "输入目录路径")
   .requiredOption("-o, --output <dir>", "输出目录路径")
   .option("-p, --password <password>", "解压密码", "")
   .option("--filter <filterpath>", "要过滤的文件路径（ZIP内相对路径）")
-  .option("--maxConcurrency <number>", "最大并发数，默认为CPU核心数", `${os.cpus().length}`)
-  .option("--zipFormat <formats>", "压缩文件格式，多个格式用逗号分隔，默认为.zip", ".zip")
+  .option(
+    "--maxConcurrency <number>",
+    "最大并发数，默认为CPU核心数",
+    `${os.cpus().length}`,
+  )
+  .option(
+    "--zipFormat <formats>",
+    "压缩文件格式，多个格式用逗号分隔，默认为.zip",
+    ".zip",
+  )
+  .option(
+    "--passwordMap <filepath>",
+    '密码映射JSON文件路径, 文件中为JSON格式，格式为 { "filePath or fileName or fileExtension": "password" }',
+  )
   .action(async (options) => {
     try {
       const extractor = new UZDir(
@@ -274,6 +422,7 @@ program
         options.filter || null,
         parseInt(options.maxConcurrency) || os.cpus().length,
         options.zipFormat || ".zip",
+        options.passwordMap || null,
       );
 
       await extractor.extractAll();
