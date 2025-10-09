@@ -33,6 +33,7 @@ class ZipExtractor {
   private password: string;
   private filterFile: string | null;
   private maxConcurrency: number;
+  private zipFormat: string;
   private processedCount: number = 0;
   private errorCount: number = 0;
   private startTime: Date | null = null;
@@ -44,12 +45,14 @@ class ZipExtractor {
     password: string,
     filterFile: string | null = null,
     maxConcurrency: number = os.cpus().length,
+    zipFormat: string = ".zip",
   ) {
     this.inputDir = path.resolve(inputDir);
     this.outputDir = path.resolve(outputDir);
     this.password = password;
     this.filterFile = filterFile;
     this.maxConcurrency = maxConcurrency;
+    this.zipFormat = zipFormat;
   }
 
   /**
@@ -84,7 +87,7 @@ class ZipExtractor {
    */
   private isZipFile(filePath: string): boolean {
     const ext = path.extname(filePath).toLowerCase();
-    return ext === ".zip";
+    return this.zipFormat.replace(/，/g, ',').split(',').map(format => format.trim()).includes(ext);
   }
 
   /**
@@ -98,7 +101,7 @@ class ZipExtractor {
    * 创建输出目录结构
    */
   private createOutputStructure(relativePath: string): string {
-    const zipFileName = path.basename(relativePath, ".zip");
+    const zipFileName = path.basename(relativePath, path.extname(relativePath));
     const parentDir = path.dirname(relativePath);
 
     // 输出路径：输出目录 + 相对路径（不含.zip扩展名）
@@ -171,6 +174,7 @@ class ZipExtractor {
     console.log("🚀 开始解压过程...");
     console.log(`📁 输入目录: ${this.inputDir}`);
     console.log(`📂 输出目录: ${this.outputDir}`);
+    console.log(`🗂️  待解压文件格式: ${this.zipFormat}`);
     console.log(`🔑 使用密码: ${this.password ? "***" : "无"}`);
     if (this.filterFile) {
       console.log(`⏭️  过滤文件: ${this.filterFile}`);
@@ -191,17 +195,17 @@ class ZipExtractor {
     const zipFiles = await this.findZipFiles(this.inputDir);
 
     if (zipFiles.length === 0) {
-      console.log("ℹ️  未找到ZIP文件");
+      console.log("ℹ️  未找到压缩文件");
       return;
     }
 
-    console.log(`📦 找到 ${zipFiles.length} 个ZIP文件`);
+    console.log(`📦 找到 ${zipFiles.length} 个压缩文件`);
     const total = zipFiles.length;
 
     // 使用Promise.allSettled并发解压文件
     const concurrency = Math.min(this.maxConcurrency, total);
     console.log(`🔁 实际并发数: ${concurrency}`);
-
+    console.log("─".repeat(50));
 
     for (let i = 0, j = 1; i < total; i += concurrency, j++) {
       const batch = zipFiles.slice(i, i + concurrency);
@@ -251,7 +255,7 @@ class ZipExtractor {
 const program = new Command();
 
 program
-  .name("unzipper")
+  .name("uzdir")
   .description("递归解压目录下的所有ZIP文件，保持目录结构")
   .version(pkg.version, "-v, --version")
   .version(pkg.version, "-V, --VERSION")
@@ -260,6 +264,7 @@ program
   .option("-p, --password <password>", "解压密码", "")
   .option("--filter <filterpath>", "要过滤的文件路径（ZIP内相对路径）")
   .option("--maxConcurrency <number>", "最大并发数，默认为CPU核心数", `${os.cpus().length}`)
+  .option("--zipFormat <formats>", "压缩文件格式，多个格式用逗号分隔，默认为.zip", ".zip")
   .action(async (options) => {
     try {
       const extractor = new ZipExtractor(
@@ -268,6 +273,7 @@ program
         options.password,
         options.filter || null,
         parseInt(options.maxConcurrency) || os.cpus().length,
+        options.zipFormat || ".zip",
       );
 
       await extractor.extractAll();

@@ -1,12 +1,12 @@
 {
-  "name": "unzipper",
+  "name": "uzdir",
   "version": "1.0.0",
   "scripts": {
-    "unzip": "bun run unzip.ts",
-    "test": "bun unzip -i test/from -o test/to -p 123456 --filter filter.txt"
+    "uzdir": "bun run unzip.ts",
+    "test": "bun unzip -i test/from -o test/to -p 123456 --filter filter.txt --zipFormat '.zip,.7z'"
   },
   "bin": {
-    "unzipper": "unzip.ts"
+    "uzdir": "unzip.ts"
   },
   "devDependencies": {
     "@types/node": "^24.7.0",
