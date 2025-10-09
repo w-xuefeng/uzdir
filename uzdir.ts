@@ -1,28 +1,29 @@
 #!/usr/bin/env bun
 
-import { Command } from "commander";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import ansiColors from "ansi-colors";
+import colors from "ansi-colors";
+import cliProgress from "cli-progress";
 import pkg from "./package.json" with { type: "json" };
 import { glob } from "glob";
+import { Command } from "commander";
 import { extractWithNode7z } from "./7zip";
+import {
+  formatMillisecondsToTime,
+  truncateStringMiddleEnhanced,
+} from "./utils";
 
-function padZero(num: number, count = 2) {
-  return num.toString().padStart(count, "0");
-}
-
-function formatMillisecondsToTime(milliseconds: number | string) {
-  const totalSeconds = Math.floor(Number(milliseconds) / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  const formattedTime = `${padZero(hours)}:${padZero(minutes)}:${
-    padZero(seconds)
-  }`;
-  return formattedTime;
-}
+const progressBarPreset = {
+  format: `\r{title} ${
+    colors.green(
+      "{bar}",
+    )
+  } {percentage}% {status} {log}`,
+  barCompleteChar: "\u2588",
+  barIncompleteChar: "\u2591",
+};
 
 /**
  * 压缩文件解压工具
@@ -37,10 +38,21 @@ class UZDir {
   private zipFormat: string;
   private processedCount: number = 0;
   private errorCount: number = 0;
+  private errorPaths: string[] = [];
   private startTime: Date | null = null;
   private endTime: Date | null = null;
   private passwordMap: Record<string, string> | null = null;
   private fullpath: boolean;
+
+  private multiProgressBar = new cliProgress.MultiBar(
+    {
+      clearOnComplete: false,
+      hideCursor: false,
+      format: progressBarPreset.format,
+      barsize: 24,
+    },
+    progressBarPreset,
+  );
 
   constructor(
     inputDir: string,
@@ -50,7 +62,7 @@ class UZDir {
     maxConcurrency: number = os.cpus().length,
     zipFormat: string = ".zip",
     passwordMapPath: string | null = null,
-    fullpath: boolean = true
+    fullpath: boolean = true,
   ) {
     this.inputDir = path.resolve(inputDir);
     this.outputDir = path.resolve(outputDir);
@@ -60,7 +72,7 @@ class UZDir {
     this.zipFormat = zipFormat;
     this.fullpath = fullpath;
 
-    // 如果提供了passwordMapPath，则加载密码映射文件
+    // 如果提供了 passwordMapPath，则加载密码映射文件
     if (passwordMapPath) {
       try {
         const passwordMapContent = fs.readFileSync(passwordMapPath, "utf-8");
@@ -171,7 +183,11 @@ class UZDir {
 
     // 输出路径：输出目录 + 相对路径（不含.zip扩展名）
     // 如果 fullpath 为 true，则将 zip文件名作为子目录名
-    const outputPath = path.join(this.outputDir, parentDir, this.fullpath ? zipFileName : '');
+    const outputPath = path.join(
+      this.outputDir,
+      parentDir,
+      this.fullpath ? zipFileName : "",
+    );
 
     // 确保目录存在
     fs.mkdirSync(outputPath, { recursive: true });
@@ -185,7 +201,7 @@ class UZDir {
   private async applyGlobFilter(
     outputPath: string,
     globPattern: string,
-    indexFlag: string,
+    progressBar: cliProgress.SingleBar,
   ): Promise<void> {
     try {
       const matchedFiles = await glob(globPattern, {
@@ -199,33 +215,48 @@ class UZDir {
           const stat = fs.statSync(file);
           if (stat.isFile()) {
             fs.unlinkSync(file);
-            console.log(
-              `${indexFlag} 🙅 已过滤文件：${path.relative(outputPath, file)}`,
-            );
+            progressBar.update({
+              log: ansiColors.gray(
+                `🙅 已过滤文件：${path.relative(outputPath, file)}`,
+              ),
+            });
           } else if (stat.isDirectory()) {
             fs.rmdirSync(file, { recursive: true });
-            console.log(
-              `${indexFlag} 🙅 已过滤目录：${path.relative(outputPath, file)}`,
-            );
+            progressBar.update({
+              log: ansiColors.gray(
+                `🙅 已过滤目录：${path.relative(outputPath, file)}`,
+              ),
+            });
           }
         } catch (error) {
-          console.error(`${indexFlag} ❌ 删除文件/目录时出错: ${file}`, error);
+          throw Error(
+            `删除文件/目录时出错: ${file} ${(error as Error).message}`,
+          );
         }
       }
     } catch (error) {
-      console.error(`${indexFlag} ❌ Glob匹配出错: ${globPattern}`, error);
+      throw Error(`Glob匹配出错: ${globPattern} ${(error as Error).message}`);
     }
   }
 
-  private async removeFilters(outputPath: string, indexFlag: string) {
+  private async removeFilters(
+    outputPath: string,
+    progressBar: cliProgress.SingleBar,
+  ) {
     if (this.filterFile) {
       // 支持多个过滤文件/目录，使用逗号分隔
-      const filters = this.filterFile.replace(/，/g, ',').split(",").map((f) => f.trim());
+      const filters = this.filterFile.replace(/，/g, ",").split(",").map((f) =>
+        f.trim()
+      );
       for (const filter of filters) {
         // 如果是 glob 模式 (包含 * 或 **)
         if (filter.includes("*")) {
           // 使用 glob 库处理
-          await this.applyGlobFilter(outputPath, filter, indexFlag);
+          await this.applyGlobFilter(
+            outputPath,
+            filter,
+            progressBar,
+          );
         } else {
           // 精确路径匹配
           const filterFile = path.join(outputPath, filter);
@@ -233,11 +264,19 @@ class UZDir {
             const stat = fs.statSync(filterFile);
             if (stat.isFile()) {
               fs.unlinkSync(filterFile);
-              console.log(`${indexFlag} 🙅 已过滤文件：${filter}`);
+              progressBar.update({
+                log: ansiColors.gray(
+                  `🙅 已过滤文件：${filter}`,
+                ),
+              });
             }
             if (stat.isDirectory()) {
               fs.rmdirSync(filterFile, { recursive: true });
-              console.log(`${indexFlag} 🙅 已过滤目录：${filter}`);
+              progressBar.update({
+                log: ansiColors.gray(
+                  `🙅 已过滤目录：${filter}`,
+                ),
+              });
             }
           }
         }
@@ -253,48 +292,60 @@ class UZDir {
     currentIndex: number,
     total: number,
     concurrencyNumber: number = 1,
+    progressBar: cliProgress.SingleBar,
   ): Promise<boolean> {
     const relativePath = this.getRelativePath(zipFilePath);
     const outputPath = this.createOutputStructure(relativePath);
     const password = this.getPasswordForFile(zipFilePath);
-    let indexFlag = `(线程${concurrencyNumber})[${currentIndex}/${total}]`;
+    const concurrency = Math.min(this.maxConcurrency, total);
+    const indexFlag = `(线程${
+      String(concurrencyNumber).padStart(String(concurrency).length, "0")
+    })[${String(currentIndex).padStart(String(total).length, "0")}/${total}]`;
 
-    console.log(
-      `${indexFlag} 🔍 处理文件: ${relativePath}${
-        password ? " (使用密码)" : ""
-      }`,
-    );
+    progressBar.update(0, {
+      title: indexFlag,
+      percentage: 0,
+      status: "处理中...",
+      log: "\t",
+    });
 
     const startTime = Date.now();
 
     try {
-      await extractWithNode7z(
+      await extractWithNode7z({
         zipFilePath,
-        outputPath,
+        outputDir: outputPath,
         password,
-        indexFlag,
         relativePath,
-        this.fullpath
-      );
-      await this.removeFilters(outputPath, indexFlag);
-      console.log(
-        `${indexFlag} ✅ 成功解压: ${relativePath} → ${
-          path.relative(
-            this.outputDir,
-            outputPath,
+        fullpath: this.fullpath,
+        progressBar,
+      });
+      await this.removeFilters(outputPath, progressBar);
+      progressBar.update({
+        status: ansiColors.green("解压完成"),
+        log: `${
+          ansiColors.cyan(
+            truncateStringMiddleEnhanced(
+              path.basename(zipFilePath),
+              25,
+              25,
+            ),
           )
-        } 耗时 ${formatMillisecondsToTime(Date.now() - startTime)}`,
-      );
+        } ${
+          ansiColors.gray(
+            `耗时:${formatMillisecondsToTime(Date.now() - startTime)}`,
+          )
+        }`,
+      });
       this.processedCount++;
       return true;
     } catch (error) {
-      console.error(`${indexFlag} ❌ 解压失败: ${relativePath}`, error);
+      progressBar.update({
+        status: `${ansiColors.red("解压失败")}`,
+        log: ansiColors.red((error as Error)?.message),
+      });
       this.errorCount++;
-      console.log(
-        `${indexFlag} ⌛ 耗时: ${
-          formatMillisecondsToTime(Date.now() - startTime)
-        }`,
-      );
+      this.errorPaths.push(zipFilePath);
       return false;
     }
   }
@@ -347,13 +398,32 @@ class UZDir {
     console.log(`🔁 实际并发数: ${concurrency}`);
     console.log("─".repeat(50));
 
+    const progressBars = Array.from(
+      { length: concurrency },
+      () =>
+        this.multiProgressBar.create(100, 0, {
+          title: "",
+          percentage: 0,
+          status: "处理中...",
+          log: "\t",
+        }),
+    );
+
     for (let i = 0; i < total; i += concurrency) {
       const batch = zipFiles.slice(i, i + concurrency);
       const batchPromises = batch.map((zipFile, index) =>
-        this.extractZip(zipFile, i + index + 1, total, index + 1)
+        this.extractZip(
+          zipFile,
+          i + index + 1,
+          total,
+          index + 1,
+          progressBars[index],
+        )
       );
       await Promise.allSettled(batchPromises);
     }
+    progressBars.forEach((bar) => bar.stop());
+    this.multiProgressBar.stop();
 
     // 输出总结
     console.log("─".repeat(50));
@@ -361,6 +431,11 @@ class UZDir {
     console.log(`✅ 成功处理: ${this.processedCount} 个文件`);
     if (this.errorCount > 0) {
       console.log(`❌ 失败: ${this.errorCount} 个文件`);
+      console.log(
+        `❌ 失败文件列表: \n${
+          this.errorPaths.map((e, i) => `\t- ${i + 1}.${e}`).join("\n")
+        }`,
+      );
     }
 
     this.endTime = new Date(Date.now());
@@ -422,15 +497,17 @@ program
   .option(
     "--fullpath <flag>",
     "是否使用完整路径解压(即创建同名子目录)，默认为 true，设为 false、0 或 '0' 等 falsy 将会把所有解压后的文件提取到一个目录中",
-    "true"
+    "true",
   )
   .action(async (options) => {
     try {
       // 将字符串形式的布尔值转换为实际的布尔值
       let fullpath = true;
-      if (['false', '0', '', 'null', 'undefined'].includes(options.fullpath) ||
-          options.fullpath === false ||
-          options.fullpath === 0) {
+      if (
+        ["false", "0", "", "null", "undefined"].includes(options.fullpath) ||
+        options.fullpath === false ||
+        options.fullpath === 0
+      ) {
         fullpath = false;
       }
 
@@ -442,7 +519,7 @@ program
         parseInt(options.maxConcurrency) || os.cpus().length,
         options.zipFormat || ".zip",
         options.passwordMap || null,
-        fullpath
+        fullpath,
       );
 
       await extractor.extractAll();

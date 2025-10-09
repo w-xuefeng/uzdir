@@ -1,7 +1,10 @@
-import * as node7z from "node-7z";
-import { path7za } from "7zip-bin";
 import fs from "fs";
 import os from "os";
+import ansiColors from "ansi-colors";
+import * as node7z from "node-7z";
+import { path7za } from "7zip-bin";
+import { truncateStringMiddleEnhanced } from "./utils";
+import type cliProgress from "cli-progress";
 
 // 确保 path7za 具有执行权限
 try {
@@ -40,14 +43,21 @@ try {
   );
 }
 
-export function extractWithNode7z(
-  zipFilePath: string,
-  outputDir: string,
-  password: string,
-  indexFlag: string,
-  relativePath: string,
-  fullpath: boolean = true
-) {
+export function extractWithNode7z(option: {
+  zipFilePath: string;
+  outputDir: string;
+  password: string;
+  relativePath: string;
+  fullpath: boolean;
+  progressBar: cliProgress.SingleBar;
+}) {
+  const {
+    zipFilePath,
+    outputDir,
+    password,
+    fullpath = true,
+    progressBar,
+  } = option;
   const { resolve, reject, promise } = Promise.withResolvers();
 
   try {
@@ -56,29 +66,42 @@ export function extractWithNode7z(
           $bin: path7za,
           password: password,
           recursive: true,
+          $progress: true,
         })
       : node7z.extract(zipFilePath, outputDir, {
           $bin: path7za,
           password: password,
           recursive: true,
+          $progress: true,
         });
 
     stream.on("data", (data) => {
-      console.log(`${indexFlag} 🔍 [7z]正在解压:`, data.file);
+      progressBar.update({
+        status: ansiColors.gray("正在解压:"),
+        log: ansiColors.gray(truncateStringMiddleEnhanced(data.file, 50, 50)),
+      });
+    });
+
+    stream.on("progress", (progress) => {
+      progressBar.update(progress.percent);
     });
 
     stream.on("end", () => {
-      console.log(`${indexFlag} 👌 [7z]解压完成: ${relativePath}`);
+      progressBar.update(100, {
+        percentage: 100,
+        status: ansiColors.green("解压完成"),
+        log: "",
+      });
+      stream.destroy();
       resolve(true);
     });
 
     stream.on("error", (err) => {
-      console.error(`${indexFlag} ❌ [7z]解压出错:`, err);
+      stream.destroy();
       reject(err);
     });
-  } catch (error) {
-    console.error(`${indexFlag} ❌ [7z]创建解压流失败:`, error);
-    reject(error);
+  } catch (err) {
+    reject(err);
   }
 
   return promise;
