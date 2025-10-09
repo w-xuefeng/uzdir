@@ -24,10 +24,10 @@ function formatMillisecondsToTime(milliseconds: number | string) {
 }
 
 /**
- * ZIP文件解压工具
- * 支持递归解压目录下的所有ZIP文件，保持目录结构
+ * 压缩文件解压工具
+ * 支持递归解压目录下的所有指定的压缩文件（默认仅解压.zip），保持目录结构
  */
-class ZipExtractor {
+class UZDir {
   private inputDir: string;
   private outputDir: string;
   private password: string;
@@ -56,7 +56,7 @@ class ZipExtractor {
   }
 
   /**
-   * 递归遍历目录查找ZIP文件
+   * 递归遍历目录查找压缩文件
    */
   private async findZipFiles(dir: string): Promise<string[]> {
     const zipFiles: string[] = [];
@@ -83,7 +83,7 @@ class ZipExtractor {
   }
 
   /**
-   * 检查文件是否为ZIP格式
+   * 检查文件是否为指定压缩文件格式
    */
   private isZipFile(filePath: string): boolean {
     const ext = path.extname(filePath).toLowerCase();
@@ -191,7 +191,7 @@ class ZipExtractor {
     // 创建输出目录
     fs.mkdirSync(this.outputDir, { recursive: true });
 
-    // 查找所有ZIP文件
+    // 查找所有指定类型的压缩文件
     const zipFiles = await this.findZipFiles(this.inputDir);
 
     if (zipFiles.length === 0) {
@@ -202,7 +202,7 @@ class ZipExtractor {
     console.log(`📦 找到 ${zipFiles.length} 个压缩文件`);
     const total = zipFiles.length;
 
-    // 使用Promise.allSettled并发解压文件
+    // 使用 Promise.allSettled 并发解压文件
     const concurrency = Math.min(this.maxConcurrency, total);
     console.log(`🔁 实际并发数: ${concurrency}`);
     console.log("─".repeat(50));
@@ -256,7 +256,7 @@ const program = new Command();
 
 program
   .name("uzdir")
-  .description("递归解压目录下的所有ZIP文件，保持目录结构")
+  .description("递归解压目录下的所有指定类型的压缩文件（默认仅解压.zip），并保持目录结构")
   .version(pkg.version, "-v, --version")
   .version(pkg.version, "-V, --VERSION")
   .requiredOption("-i, --input <dir>", "输入目录路径")
@@ -267,7 +267,7 @@ program
   .option("--zipFormat <formats>", "压缩文件格式，多个格式用逗号分隔，默认为.zip", ".zip")
   .action(async (options) => {
     try {
-      const extractor = new ZipExtractor(
+      const extractor = new UZDir(
         options.input,
         options.output,
         options.password,
