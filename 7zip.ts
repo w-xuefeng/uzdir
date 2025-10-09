@@ -45,16 +45,23 @@ export function extractWithNode7z(
   outputDir: string,
   password: string,
   indexFlag: string,
-  relativePath: string
+  relativePath: string,
+  fullpath: boolean = true
 ) {
   const { resolve, reject, promise } = Promise.withResolvers();
 
   try {
-    const stream = node7z.extractFull(zipFilePath, outputDir, {
-      $bin: path7za,
-      password: password,
-      recursive: true,
-    });
+    const stream = fullpath
+      ? node7z.extractFull(zipFilePath, outputDir, {
+          $bin: path7za,
+          password: password,
+          recursive: true,
+        })
+      : node7z.extract(zipFilePath, outputDir, {
+          $bin: path7za,
+          password: password,
+          recursive: true,
+        });
 
     stream.on("data", (data) => {
       console.log(`${indexFlag} 🔍 [7z]正在解压:`, data.file);

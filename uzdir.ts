@@ -40,6 +40,7 @@ class UZDir {
   private startTime: Date | null = null;
   private endTime: Date | null = null;
   private passwordMap: Record<string, string> | null = null;
+  private fullpath: boolean;
 
   constructor(
     inputDir: string,
@@ -49,6 +50,7 @@ class UZDir {
     maxConcurrency: number = os.cpus().length,
     zipFormat: string = ".zip",
     passwordMapPath: string | null = null,
+    fullpath: boolean = true
   ) {
     this.inputDir = path.resolve(inputDir);
     this.outputDir = path.resolve(outputDir);
@@ -56,6 +58,7 @@ class UZDir {
     this.filterFile = filterFile;
     this.maxConcurrency = maxConcurrency;
     this.zipFormat = zipFormat;
+    this.fullpath = fullpath;
 
     // 如果提供了passwordMapPath，则加载密码映射文件
     if (passwordMapPath) {
@@ -167,7 +170,8 @@ class UZDir {
     const parentDir = path.dirname(relativePath);
 
     // 输出路径：输出目录 + 相对路径（不含.zip扩展名）
-    const outputPath = path.join(this.outputDir, parentDir, zipFileName);
+    // 如果 fullpath 为 true，则将 zip文件名作为子目录名
+    const outputPath = path.join(this.outputDir, parentDir, this.fullpath ? zipFileName : '');
 
     // 确保目录存在
     fs.mkdirSync(outputPath, { recursive: true });
@@ -270,6 +274,7 @@ class UZDir {
         password,
         indexFlag,
         relativePath,
+        this.fullpath
       );
       await this.removeFilters(outputPath, indexFlag);
       console.log(
@@ -314,6 +319,7 @@ class UZDir {
       console.log(`⏭️  过滤文件: ${this.filterFile}`);
     }
     console.log(`🔁 最大并发数: ${this.maxConcurrency}`);
+    console.log(`📌 完整路径解压: ${this.fullpath ? "是" : "否"}`);
     this.startTime = new Date(Date.now());
     console.log("─".repeat(50));
 
@@ -413,8 +419,21 @@ program
     "--passwordMap <filepath>",
     '密码映射JSON文件路径, 文件中为JSON格式，格式为 { "filePath or fileName or fileExtension": "password" }',
   )
+  .option(
+    "--fullpath <flag>",
+    "是否使用完整路径解压(即创建同名子目录)，默认为 true，设为 false、0 或 '0' 等 falsy 将会把所有解压后的文件提取到一个目录中",
+    "true"
+  )
   .action(async (options) => {
     try {
+      // 将字符串形式的布尔值转换为实际的布尔值
+      let fullpath = true;
+      if (['false', '0', '', 'null', 'undefined'].includes(options.fullpath) ||
+          options.fullpath === false ||
+          options.fullpath === 0) {
+        fullpath = false;
+      }
+
       const extractor = new UZDir(
         options.input,
         options.output,
@@ -423,6 +442,7 @@ program
         parseInt(options.maxConcurrency) || os.cpus().length,
         options.zipFormat || ".zip",
         options.passwordMap || null,
+        fullpath
       );
 
       await extractor.extractAll();
