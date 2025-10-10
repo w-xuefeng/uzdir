@@ -1,7 +1,7 @@
 export function truncateStringMiddleEnhanced(
   str: string,
   threshold = 30,
-  maxLength = 30,
+  maxLength = threshold,
   options: {
     ellipsis?: string;
     preserveWords?: boolean;
@@ -10,7 +10,7 @@ export function truncateStringMiddleEnhanced(
     ellipsis: "…",
     preserveWords: false,
     wordSeparator: " ",
-  }
+  },
 ) {
   const {
     ellipsis = "…",
@@ -29,18 +29,13 @@ export function truncateStringMiddleEnhanced(
   let headLength = Math.floor(availableLength / 2);
   let tailLength = availableLength - headLength;
 
-  if (availableLength % 2 === 0) {
-    tailLength = headLength + 1;
-    headLength = availableLength - tailLength;
-  }
-
   if (preserveWords) {
     headLength = findWordBoundary(str, headLength, wordSeparator, false);
     tailLength = findWordBoundary(
       str,
       str.length - tailLength,
       wordSeparator,
-      true
+      true,
     );
   }
 
@@ -54,7 +49,7 @@ function findWordBoundary(
   str: string,
   position: number,
   separator: string,
-  isTail: boolean
+  isTail: boolean,
 ) {
   if (isTail) {
     while (position < str.length && str[position] !== separator) {
@@ -78,8 +73,10 @@ export function formatMillisecondsToTime(milliseconds: number | string) {
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  const formattedTime = `${padZero(hours)}:${padZero(minutes)}:${padZero(
-    seconds
-  )}`;
+  const formattedTime = `${padZero(hours)}:${padZero(minutes)}:${
+    padZero(
+      seconds,
+    )
+  }`;
   return formattedTime;
 }

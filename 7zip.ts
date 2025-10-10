@@ -1,5 +1,6 @@
 import fs from "fs";
 import os from "os";
+import { Logger } from "./logger";
 import ansiColors from "ansi-colors";
 import * as node7z from "node-7z";
 import { path7za } from "7zip-bin";
@@ -39,7 +40,7 @@ try {
 } catch (error) {
   console.warn(
     "⚠️ 无法设置 7zip 二进制文件执行权限:",
-    (error as Error).message
+    (error as Error).message,
   );
 }
 
@@ -50,6 +51,7 @@ export function extractWithNode7z(option: {
   relativePath: string;
   fullpath: boolean;
   progressBar: cliProgress.SingleBar;
+  L: Logger;
 }) {
   const {
     zipFilePath,
@@ -57,29 +59,31 @@ export function extractWithNode7z(option: {
     password,
     fullpath = true,
     progressBar,
+    L,
   } = option;
   const { resolve, reject, promise } = Promise.withResolvers();
 
   try {
     const stream = fullpath
       ? node7z.extractFull(zipFilePath, outputDir, {
-          $bin: path7za,
-          password: password,
-          recursive: true,
-          $progress: true,
-        })
+        $bin: path7za,
+        password: password,
+        recursive: true,
+        $progress: true,
+      })
       : node7z.extract(zipFilePath, outputDir, {
-          $bin: path7za,
-          password: password,
-          recursive: true,
-          $progress: true,
-        });
+        $bin: path7za,
+        password: password,
+        recursive: true,
+        $progress: true,
+      });
 
     stream.on("data", (data) => {
       progressBar.update({
         status: ansiColors.gray("正在解压:"),
         log: ansiColors.gray(truncateStringMiddleEnhanced(data.file, 50, 50)),
       });
+      L.log(`[7z]正在解压:${data.file}`);
     });
 
     stream.on("progress", (progress) => {
@@ -92,6 +96,7 @@ export function extractWithNode7z(option: {
         status: ansiColors.green("解压完成"),
         log: "",
       });
+      L.log(`[7z]解压完成:${zipFilePath}`);
       stream.destroy();
       resolve(true);
     });

@@ -17,6 +17,9 @@
 - 🔑 支持为不同文件指定不同密码
 - 📊 详细的处理日志和统计信息
 - 📍 支持指定是否创建同名子目录
+- 🙈 压缩文件扫描时支持忽略特定文件/目录，默认忽略隐藏文件
+- 📄 支持单个文件解压
+- 📝 可控制日志输出位置
 
 ## 🚀 安装
 
@@ -56,7 +59,7 @@ bun run uzdir -- -i <输入目录> -o <输出目录> [-p <密码>] [--filter <�
 
 ### 🛠️ 参数说明
 
-- `-i, --input <dir>`: 输入目录路径（必填）
+- `-i, --input <dir>`: 输入目录路径或压缩文件路径（必填）
 - `-o, --output <dir>`: 输出目录路径（必填）
 - `-p, --password <password>`: 解压密码（可选，默认无密码）
 - `--filter <filterpaths>`: 要过滤的文件路径（压缩包内相对路径），多个路径用逗号分隔（可选）。支持glob通配符：
@@ -65,6 +68,8 @@ bun run uzdir -- -i <输入目录> -o <输出目录> [-p <密码>] [--filter <�
 - `--maxConcurrency <number>`: 最大并发数（可选，默认为 CPU 核心数）
 - `--zipFormat <formats>`: 压缩文件格式，多个格式用逗号分隔（可选，默认为 .zip）
 - `--passwordMap <filepath>`: 密码映射 JSON 文件路径（可选）
+- `--ignore <patterns>`: 忽略文件/目录的模式，多个模式用逗号分隔，支持简单glob模式，默认忽略隐藏文件
+- `--log`: 是否将日志输出到output目录，默认为false
 - `--fullpath <flag>`: 是否使用完整路径解压(即创建同名子目录)，默认为 true，设为 false、0 或 '0' 等 falsy 将会把所有解压后的文件提取到一个目录中
 - `-v, --version`: 显示版本信息
 
@@ -89,6 +94,16 @@ bun run uzdir -- -i <输入目录> -o <输出目录> [-p <密码>] [--filter <�
 4. 🎯 最后匹配文件格式（扩展名）
 5. 🛡️ 如果都没有匹配到，则使用 `-p` 参数提供的默认密码
 
+### 🚫 忽略文件/目录
+
+使用 `--ignore` 参数可以在扫描压缩文件时忽略特定的文件或目录。支持简单的glob模式：
+
+- `*.tmp.zip` - 忽略所有.tmp.zip文件
+- `temp*` - 忽略所有以temp开头的文件/目录
+- `backup` - 忽略名为backup的文件/目录
+
+默认情况下，所有以`.`开头的隐藏文件和目录都会被忽略。
+
 ### 📍 解压路径模式
 
 UZDir 支持两种解压路径模式：
@@ -99,12 +114,25 @@ UZDir 支持两种解压路径模式：
 2. **非完整路径模式**：使用 `--fullpath false`、`--fullpath 0` 等 falsy 值
    - 不创建同名子目录，仅将文件提取到指定目录下
 
+### 📝 日志输出位置
+
+UZDir 支持控制日志的输出位置：
+
+1. **默认位置**：日志默认输出到 `$HOME/.uzdir/logs` 目录
+2. **输出目录**：使用 `--log` 参数可以将日志输出到指定的输出目录
+
 ### 💡 示例
 
 解压目录中的所有 ZIP 文件：
 
 ```bash
 uzdir -i ./zips -o ./output
+```
+
+解压单个压缩文件：
+
+```bash
+uzdir -i archive.zip -o ./output
 ```
 
 解压多种格式的压缩文件：
@@ -159,6 +187,18 @@ uzdir -i ./zips -o ./output --maxConcurrency 4
 
 ```bash
 uzdir -i ./zips -o ./output --fullpath false
+```
+
+使用忽略模式：
+
+```bash
+uzdir -i ./zips -o ./output --ignore "*.tmp.zip,*.log.zip,backup.7z"
+```
+
+将日志输出到output目录：
+
+```bash
+uzdir -i ./zips -o ./output --log
 ```
 
 ## 🧪 测试
