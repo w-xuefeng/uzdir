@@ -16,15 +16,6 @@ import {
 } from "./utils";
 import { Logger } from "./logger";
 
-/**
- * CHANGELOG:
- * [X] 1.添加日志系统，每次运行结束后，同时输出执行日志，
- *      - 优化错误展示，及错误日志文件输出
- *      - 日志文件默认输出到 $HOME/.uzdir/logs 目录下，使用 --log 可将日志输出到 --output 目录下
- * [X] 3.压缩文件扫描时添加 ignore 策略，默认忽略隐藏文件，可通过 --ignore 参数指定，支持简单 glob 模式
- * [X] 4.支持单个文件解压, -i 支持传入单个压缩文件
- */
-
 const progressBarPreset = {
   format: `\r{title} ${
     colors.green(
@@ -375,7 +366,12 @@ class UZDir {
     this.L.log("🚀 开始解压过程...", true);
     this.L.log(`📁 输入: ${this.inputDir}`, true);
     this.L.log(`📂 输出目录: ${this.outputDir}`, true);
-    this.L.log(`🗂️  待解压文件格式: ${this.zipFormat}`, true);
+    this.L.log(
+      `🗂️ 待解压文件格式: ${this.zipFormat}`,
+      true,
+      // 🗂️ 这个 icon 的宽度在命令行中展示时表现为坍缩形态，因此需要多一个空格来优化展示
+      () => `🗂️  待解压文件格式: ${this.zipFormat}`,
+    );
     this.L.log(`🔑 使用默认密码: ${this.password ? "***" : "无"}`, true);
     if (this.passwordMap) {
       this.L.log(
@@ -386,7 +382,12 @@ class UZDir {
       );
     }
     if (this.filterFile) {
-      this.L.log(`⏭️  过滤文件: ${this.filterFile}`, true);
+      this.L.log(
+        `⏭️ 过滤文件: ${this.filterFile}`,
+        true,
+        // ⏭️ 这个 icon 的宽度在命令行中展示时表现为坍缩形态，因此需要多一个空格来优化展示
+        () => `⏭️  过滤文件: ${this.filterFile}`,
+      );
     }
     if (this.ignorePattern) {
       this.L.log(`🚫 忽略模式: ${this.ignorePattern}`, true);
