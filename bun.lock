@@ -4,7 +4,7 @@
     "": {
       "name": "zip-extractor",
       "dependencies": {
-        "7zip-bin": "^5.2.0",
+        "7zip-bin-full": "^25.1.2",
         "ansi-colors": "^4.1.3",
         "cli-progress": "^3.12.0",
         "commander": "^12.0.0",
@@ -21,7 +21,7 @@
     },
   },
   "packages": {
-    "7zip-bin": ["7zip-bin@5.2.0", "", {}, "sha512-ukTPVhqG4jNzMro2qA9HSCSSVJN3aN7tlb+hfqYCt3ER0yWroeA2VR38MNrOHLQ/cVj+DaIMad0kFCtWWowh/A=="],
+    "7zip-bin-full": ["7zip-bin-full@25.1.2", "", {}, "sha512-6+9Te5sNqC1vZYKuzS9OhP9HMLnDA4EOlG9C3n4ieq2caAY/bR98x8EzExsjLM6Ajtje+MRKkdFvbsodPtKS9g=="],
 
     "@isaacs/balanced-match": ["@isaacs/balanced-match@4.0.1", "", {}, "sha512-yzMTt9lEb8Gv7zRioUilSglI0c0smZ9k5D65677DLWLtWJaXIS3CqcGyUFByYKlnUj6TkjLVs54fBl6+TiGQDQ=="],
 

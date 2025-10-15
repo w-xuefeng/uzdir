@@ -359,10 +359,24 @@ class UZDir {
     }
   }
 
+  private supportSingleFileFormat() {
+    const extname = path.extname(this.inputDir).toLocaleLowerCase();
+    if (!this.zipFormat.toLocaleLowerCase().includes(extname)) {
+      this.zipFormat += `,${extname}`;
+    }
+  }
+
   /**
    * 执行解压过程
    */
   public async extractAll(): Promise<void> {
+    const inputStat = fs.statSync(this.inputDir);
+    const inputIsFile = inputStat.isFile();
+
+    if (inputIsFile) {
+      this.supportSingleFileFormat();
+    }
+
     this.L.log("🚀 开始解压过程...", true);
     this.L.log(`📁 输入: ${this.inputDir}`, true);
     this.L.log(`📂 输出目录: ${this.outputDir}`, true);
@@ -370,7 +384,7 @@ class UZDir {
       `🗂️ 待解压文件格式: ${this.zipFormat}`,
       true,
       // 🗂️ 这个 icon 的宽度在命令行中展示时表现为坍缩形态，因此需要多一个空格来优化展示
-      () => `🗂️  待解压文件格式: ${this.zipFormat}`,
+      (msg) => msg.replace("🗂️", "🗂️ "),
     );
     this.L.log(`🔑 使用默认密码: ${this.password ? "***" : "无"}`, true);
     if (this.passwordMap) {
@@ -386,7 +400,7 @@ class UZDir {
         `⏭️ 过滤文件: ${this.filterFile}`,
         true,
         // ⏭️ 这个 icon 的宽度在命令行中展示时表现为坍缩形态，因此需要多一个空格来优化展示
-        () => `⏭️  过滤文件: ${this.filterFile}`,
+        (msg) => msg.replace("⏭️", "⏭️ "),
       );
     }
     if (this.ignorePattern) {
@@ -399,9 +413,7 @@ class UZDir {
 
     let zipFiles: string[] = [];
 
-    // 检查输入是单个文件还是目录
-    const inputStat = fs.statSync(this.inputDir);
-    if (inputStat.isFile()) {
+    if (inputIsFile) {
       // 如果输入是单个文件
       if (this.isZipFile(this.inputDir)) {
         zipFiles = [this.inputDir];
@@ -586,8 +598,8 @@ program
   )
   .option(
     "--zipFormat <formats>",
-    "压缩文件格式，多个格式用逗号分隔，默认为.zip",
-    ".zip",
+    "压缩文件格式，多个格式用逗号分隔，默认为.zip,.rar",
+    ".zip,.rar",
   )
   .option(
     "--passwordMap <filepath>",

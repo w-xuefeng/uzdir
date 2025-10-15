@@ -3,18 +3,18 @@ import os from "os";
 import { Logger } from "./logger";
 import ansiColors from "ansi-colors";
 import * as node7z from "node-7z";
-import { path7za } from "7zip-bin";
+import { path7z } from "7zip-bin-full";
 import { truncateStringMiddleEnhanced } from "./utils";
 import type cliProgress from "cli-progress";
 
-// 确保 path7za 具有执行权限
+// 确保 path7z 具有执行权限
 try {
   // 检查文件是否存在以及是否已经有执行权限
-  if (fs.existsSync(path7za)) {
+  if (fs.existsSync(path7z)) {
     // 在 Windows 平台上，可执行文件通常有 .exe 扩展名，且权限模型不同于 Unix
     if (os.platform() === "win32") {
       // Windows 平台上检查文件扩展名是否为可执行文件扩展名
-      const isExecutable = path7za.toLowerCase().endsWith(".exe");
+      const isExecutable = path7z.toLowerCase().endsWith(".exe");
       if (isExecutable) {
         console.log("\n📁 UZDir 已经准备就绪\n");
       } else {
@@ -23,19 +23,19 @@ try {
       }
     } else {
       // Unix/Linux/macOS 平台上的处理逻辑
-      const stat = fs.statSync(path7za);
+      const stat = fs.statSync(path7z);
       // 检查用户是否有执行权限 (UNIX/Linux/macOS)
       const hasExecutePermission = (stat.mode & 0o100) !== 0;
 
       if (!hasExecutePermission) {
-        fs.chmodSync(path7za, 0o755);
+        fs.chmodSync(path7z, 0o755);
         console.log("👌 7zip 二进制文件执行权限已设置");
       } else {
         console.log("\n📁 UZDir 已经准备就绪\n");
       }
     }
   } else {
-    console.warn("⚠️ 7zip 二进制文件不存在:", path7za);
+    console.warn("⚠️ 7zip 二进制文件不存在:", path7z);
   }
 } catch (error) {
   console.warn(
@@ -66,13 +66,13 @@ export function extractWithNode7z(option: {
   try {
     const stream = fullpath
       ? node7z.extractFull(zipFilePath, outputDir, {
-        $bin: path7za,
+        $bin: path7z,
         password: password,
         recursive: true,
         $progress: true,
       })
       : node7z.extract(zipFilePath, outputDir, {
-        $bin: path7za,
+        $bin: path7z,
         password: password,
         recursive: true,
         $progress: true,

@@ -1,10 +1,10 @@
 {
   "name": "uzdir",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "scripts": {
     "uzdir": "bun run uzdir.ts",
     "clean": "rimraf test/to",
-    "test": "bun clean && bun uzdir -i test/from -o test/to -p 123456 --passwordMap test/password.json --ignore ignore.zip --filter 'filter.txt,*/**/.DS_Store' --zipFormat '.zip,.7z' --log",
+    "test": "bun clean && bun uzdir -i test/from -o test/to -p 123456 --passwordMap test/password.json --ignore ignore.zip --filter 'filter.txt,*/**/.DS_Store' --zipFormat '.zip,.rar,.7z' --log",
     "test:nosubdir": "bun run test --fullpath false"
   },
   "bin": {
@@ -22,7 +22,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "7zip-bin": "^5.2.0",
+    "7zip-bin-full": "^25.1.2",
     "ansi-colors": "^4.1.3",
     "cli-progress": "^3.12.0",
     "commander": "^12.0.0",
