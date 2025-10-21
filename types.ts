@@ -28,4 +28,5 @@ export interface UZDirOptions {
   fullpath: boolean;
   ignorePattern: string | null;
   withLog: boolean;
+  logVisible?: boolean;
 }

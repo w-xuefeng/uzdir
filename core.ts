@@ -44,6 +44,7 @@ export class UZDir {
   private fullpath: boolean;
   private ignorePattern: string | null;
   private withLog: boolean;
+  private logVisible: boolean = true;
   private L = new Logger();
 
   private multiProgressBar = new cliProgress.MultiBar(
@@ -68,6 +69,7 @@ export class UZDir {
       fullpath = true,
       ignorePattern = null,
       withLog = false,
+      logVisible = true,
     } = options;
 
     this.inputDir = path.resolve(inputDir);
@@ -79,6 +81,8 @@ export class UZDir {
     this.fullpath = fullpath;
     this.ignorePattern = ignorePattern;
     this.withLog = withLog;
+    this.logVisible = logVisible;
+
     if (this.withLog) {
       this.L.setFilePath(this.outputDir);
     }
@@ -90,13 +94,13 @@ export class UZDir {
         this.passwordMap = JSON.parse(passwordMapContent);
         this.L.log(
           `🔐 ${t("messages.passwordMapLoaded", { path: passwordMapPath })}`,
-          true,
+          this.logVisible,
         );
       } catch (error) {
         this.L.error(
           `❌ ${t("messages.fileError")}: ${passwordMapPath}`,
           error as Error,
-          true,
+          this.logVisible,
         );
         process.exit(1);
       }
@@ -129,7 +133,11 @@ export class UZDir {
         }
       }
     } catch (error) {
-      this.L.error(`❌ ${t("messages.processingError")}: ${dir}`, error, true);
+      this.L.error(
+        `❌ ${t("messages.processingError")}: ${dir}`,
+        error,
+        this.logVisible,
+      );
     }
 
     return zipFiles;
@@ -307,7 +315,7 @@ export class UZDir {
     currentIndex: number,
     total: number,
     concurrencyNumber: number = 1,
-    progressBar: cliProgress.SingleBar,
+    progressBar: cliProgress.SingleBar | null,
   ): Promise<boolean> {
     const relativePath = this.getRelativePath(zipFilePath);
     const outputPath = this.createOutputStructure(relativePath);
@@ -317,7 +325,7 @@ export class UZDir {
       String(concurrencyNumber).padStart(String(concurrency).length, "0")
     })[${String(currentIndex).padStart(String(total).length, "0")}/${total}]`;
 
-    progressBar.update(0, {
+    progressBar?.update(0, {
       title: indexFlag,
       percentage: 0,
       status: t("messages.preparing"),
@@ -342,7 +350,7 @@ export class UZDir {
       });
       await this.removeFilters(outputPath);
       const timeUsed = formatMillisecondsToTime(Date.now() - startTime);
-      progressBar.update({
+      progressBar?.update({
         status: ansiColors.green(t("messages.completed")),
         log: `${
           ansiColors.cyan(
@@ -363,7 +371,7 @@ export class UZDir {
       return true;
     } catch (error) {
       const err = error as Error & { stderr: string };
-      progressBar.update({
+      progressBar?.update({
         status: `${ansiColors.red(t("messages.failedStatus"))}`,
         log: ansiColors.red(
           String(err?.["stderr"]).trim().replace(/\n/g, " ") ?? err.message,
@@ -397,12 +405,12 @@ export class UZDir {
       this.supportSingleFileFormat();
     }
 
-    this.L.log(t("messages.start"), true);
-    this.L.log(`${t("messages.input")}: ${this.inputDir}`, true);
-    this.L.log(`${t("messages.output")}: ${this.outputDir}`, true);
+    this.L.log(t("messages.start"), this.logVisible);
+    this.L.log(`${t("messages.input")}: ${this.inputDir}`, this.logVisible);
+    this.L.log(`${t("messages.output")}: ${this.outputDir}`, this.logVisible);
     this.L.log(
       `${t("messages.formats")}: ${this.zipFormat}`,
-      true,
+      this.logVisible,
       // 🗂️ 这个 icon 的宽度在命令行中展示时表现为坍缩形态，因此需要多一个空格来优化展示
       (msg) => msg.replace("🗂️", "🗂️ "),
     );
@@ -410,7 +418,7 @@ export class UZDir {
       `${t("messages.defaultPassword")}: ${
         this.password ? "***" : t("messages.none")
       }`,
-      true,
+      this.logVisible,
     );
     if (this.passwordMap) {
       this.L.log(
@@ -419,29 +427,39 @@ export class UZDir {
             count: Object.keys(this.passwordMap).length,
           })
         }`,
-        true,
+        this.logVisible,
       );
     }
     if (this.filterFile) {
       this.L.log(
         `${t("messages.filter")}: ${this.filterFile}`,
-        true,
+        this.logVisible,
         // ⏭️ 这个 icon 的宽度在命令行中展示时表现为坍缩形态，因此需要多一个空格来优化展示
         (msg) => msg.replace("⏭️", "⏭️ "),
       );
     }
     if (this.ignorePattern) {
-      this.L.log(`${t("messages.ignore")}: ${this.ignorePattern}`, true);
+      this.L.log(
+        `${t("messages.ignore")}: ${this.ignorePattern}`,
+        this.logVisible,
+      );
     }
-    this.L.log(`${t("messages.maxConcurrency")}: ${this.maxConcurrency}`, true);
+    this.L.log(
+      `${t("messages.maxConcurrency")}: ${this.maxConcurrency}`,
+      this.logVisible,
+    );
     this.L.log(
       `${t("messages.fullPath")}: ${
         this.fullpath ? t("messages.yes") : t("messages.no")
       }`,
-      true,
+      this.logVisible,
     );
     this.startTime = new Date(Date.now());
-    this.L.log(t("messages.logSeparator"), true, (e) => ansiColors.white(e));
+    this.L.log(
+      t("messages.logSeparator"),
+      this.logVisible,
+      (e) => ansiColors.white(e),
+    );
 
     let zipFiles: string[] = [];
 
@@ -451,7 +469,7 @@ export class UZDir {
         zipFiles = [this.inputDir];
       } else {
         const msg = t("messages.invalidFile") + `: ${this.inputDir}`;
-        this.L.error(msg, new Error(msg), true);
+        this.L.error(msg, new Error(msg), this.logVisible);
         return;
       }
     } else {
@@ -462,7 +480,7 @@ export class UZDir {
         this.L.error(
           msg,
           new Error(msg),
-          true,
+          this.logVisible,
         );
         return;
       }
@@ -472,27 +490,39 @@ export class UZDir {
     }
 
     if (zipFiles.length === 0) {
-      this.L.log(t("messages.noZipFiles"), true);
+      this.L.log(t("messages.noZipFiles"), this.logVisible);
       return;
     }
 
-    this.L.log(t("messages.found", { count: zipFiles.length }), true);
+    this.L.log(
+      t("messages.found", { count: zipFiles.length }),
+      this.logVisible,
+    );
     const total = zipFiles.length;
 
     // 使用连续任务调度实现并发
     const concurrency = Math.min(this.maxConcurrency, total);
-    this.L.log(`${t("messages.actualConcurrency")}: ${concurrency}`, true);
-    this.L.log(t("messages.logSeparator"), true, (e) => ansiColors.white(e));
+    this.L.log(
+      `${t("messages.actualConcurrency")}: ${concurrency}`,
+      this.logVisible,
+    );
+    this.L.log(
+      t("messages.logSeparator"),
+      this.logVisible,
+      (e) => ansiColors.white(e),
+    );
 
     const progressBars = Array.from(
       { length: concurrency },
       () =>
-        this.multiProgressBar.create(100, 0, {
-          title: "",
-          percentage: 0,
-          status: t("messages.processing"),
-          log: "\t",
-        }),
+        this.logVisible
+          ? this.multiProgressBar.create(100, 0, {
+            title: "",
+            percentage: 0,
+            status: t("messages.processing"),
+            log: "\t",
+          })
+          : null,
     );
 
     // 实现连续任务调度逻辑 - 当任何任务完成时，如果有剩余任务则立即开始执行
@@ -530,35 +560,39 @@ export class UZDir {
     // 等待所有任务完成
     await Promise.allSettled(workers);
 
-    progressBars.forEach((bar) => bar.stop());
+    progressBars.forEach((bar) => bar?.stop());
     this.multiProgressBar.stop();
 
     // 输出总结
-    this.L.log(t("messages.logSeparator"), true, (e) => ansiColors.white(e));
-    this.L.log(t("messages.complete"), true);
+    this.L.log(
+      t("messages.logSeparator"),
+      this.logVisible,
+      (e) => ansiColors.white(e),
+    );
+    this.L.log(t("messages.complete"), this.logVisible);
     this.L.log(
       `${t("messages.success")}: ${this.processedCount} ${t("messages.files")}`,
-      true,
+      this.logVisible,
     );
     if (this.errorCount > 0) {
       this.L.log(
         `${t("messages.failed")}: ${this.errorCount} ${t("messages.files")}`,
-        true,
+        this.logVisible,
       );
       this.L.log(
         `${t("messages.failedList")}: \n${
           this.errorPaths.map((e, i) => `\t- ${i + 1}.${e}`).join("\n")
         }`,
-        true,
+        this.logVisible,
       );
       this.L.log(
         `${t("messages.logFile")}: ${this.L.getLogFilePath("error")}`,
-        true,
+        this.logVisible,
       );
     }
     this.L.log(
       `${t("messages.extractLog")}: ${this.L.getLogFilePath("log")}`,
-      true,
+      this.logVisible,
     );
     this.endTime = new Date(Date.now());
 
@@ -569,7 +603,7 @@ export class UZDir {
           hour12: false,
         })
       }`,
-      true,
+      this.logVisible,
     );
     this.L.log(
       `${t("messages.endTime")}: ${
@@ -578,7 +612,7 @@ export class UZDir {
           hour12: false,
         })
       }`,
-      true,
+      this.logVisible,
     );
     this.L.log(
       `${t("messages.duration")}: ${
@@ -586,7 +620,7 @@ export class UZDir {
           this.endTime.getTime() - this.startTime.getTime(),
         )
       }`,
-      true,
+      this.logVisible,
     );
   }
 

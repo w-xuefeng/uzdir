@@ -51,7 +51,7 @@ export function extractWithNode7z(option: {
   password: string;
   relativePath: string;
   fullpath: boolean;
-  progressBar: cliProgress.SingleBar;
+  progressBar: cliProgress.SingleBar | null;
   L: Logger;
 }) {
   const {
@@ -80,7 +80,7 @@ export function extractWithNode7z(option: {
       });
 
     stream.on("data", (data) => {
-      progressBar.update({
+      progressBar?.update({
         status: ansiColors.gray(`${t("sevenZip.extracting")}`),
         log: ansiColors.gray(truncateStringMiddleEnhanced(data.file, 50, 50)),
       });
@@ -88,11 +88,11 @@ export function extractWithNode7z(option: {
     });
 
     stream.on("progress", (progress) => {
-      progressBar.update(progress.percent);
+      progressBar?.update(progress.percent);
     });
 
     stream.on("end", () => {
-      progressBar.update(100, {
+      progressBar?.update(100, {
         percentage: 100,
         status: ansiColors.green(t("sevenZip.extractComplete")),
         log: "",

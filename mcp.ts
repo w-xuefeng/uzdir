@@ -178,9 +178,10 @@ export async function runMCPServer() {
             };
 
             // Create extractor instance
-            const extractor = new UZDir(
-              handleUzdirOptions(uzdirParams),
-            );
+            const extractor = new UZDir({
+              ...handleUzdirOptions(uzdirParams),
+              logVisible: false,
+            });
 
             // Perform extraction
             await extractor.extractAll();
@@ -252,7 +253,9 @@ ${
             return {
               content: [{
                 type: "text",
-                text: `${t("mcp.passwordMapCreationFailed")}: ${(error as Error).message}`,
+                text: `${t("mcp.passwordMapCreationFailed")}: ${
+                  (error as Error).message
+                }`,
               }],
               isError: true,
             };
