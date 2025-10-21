@@ -1,6 +1,6 @@
 {
   "name": "uzdir",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "scripts": {
     "uzdir": "bun run uzdir.ts",
     "clean": "rimraf test/to",
