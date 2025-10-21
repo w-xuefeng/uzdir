@@ -1,10 +1,10 @@
-import { Command } from "commander";
-import pkg from "./package.json" with { type: "json" };
 import os from "os";
-import { t, getAvailableLanguages } from "./i18n";
-import { Language } from "./types";
-import { setCurrentLanguage } from "./config";
+import { Command } from "commander";
+import { getAvailableLanguages, t } from "./i18n";
+import { CPU_COUNTS, setCurrentLanguage } from "./config";
 import { UZDir } from "./core";
+import pkg from "./package.json" with { type: "json" };
+import type { Language, UZDirOptions, UZDirParams } from "./types";
 
 /**
  * 设置语言命令处理
@@ -14,7 +14,9 @@ export function handleLanguageCommand(language?: string): void {
   if (!language) {
     // 显示当前语言和可用语言
     console.log(`${t("lang.current")}: ${t("cli.name")}`);
-    console.log(`${t("lang.available")}: ${getAvailableLanguages().join(", ")}`);
+    console.log(
+      `${t("lang.available")}: ${getAvailableLanguages().join(", ")}`,
+    );
   } else {
     // 设置语言
     const availableLanguages = getAvailableLanguages();
@@ -30,45 +32,51 @@ export function handleLanguageCommand(language?: string): void {
   process.exit(0);
 }
 
+function handleMaxConcurrency(maxConcurrency?: string | number) {
+  if (!maxConcurrency) {
+    return CPU_COUNTS;
+  }
+  if (typeof maxConcurrency === "number") {
+    return maxConcurrency <= 0 ? CPU_COUNTS : maxConcurrency;
+  }
+  const parsed = parseInt(maxConcurrency) || CPU_COUNTS;
+  return parsed <= 0 ? CPU_COUNTS : parsed;
+}
+
+export function handleUzdirOptions(options: UZDirParams): UZDirOptions {
+  const defaultOptions = {
+    password: "",
+    filterFile: null,
+    zipFormat: `.zip,.rar`,
+    fullpath: "true",
+    maxConcurrency: CPU_COUNTS,
+  };
+  const uzdirOptions: UZDirOptions = {
+    inputDir: options.input,
+    outputDir: options.output,
+    password: options.password ?? defaultOptions.password,
+    passwordMapPath: options.passwordMap ?? null,
+    filterFile: options.filter ?? defaultOptions.filterFile,
+    maxConcurrency: handleMaxConcurrency(options.maxConcurrency),
+    zipFormat: options.zipFormat ?? defaultOptions.zipFormat,
+    fullpath:
+      ["false", "0", "", "null", "undefined", false, 0, null, void 0].includes(
+          options.fullpath || defaultOptions.fullpath,
+        )
+        ? false
+        : true,
+    withLog: options.log ?? false,
+    ignorePattern: options.ignore ?? null,
+  };
+  return uzdirOptions;
+}
+
 /**
  * 主命令处理
  */
-export function handleMainCommand(options: {
-  input: string;
-  output: string;
-  password: string;
-  filter: string | null;
-  maxConcurrency: string;
-  zipFormat: string;
-  passwordMap: string | null;
-  ignore: string | null;
-  log: boolean;
-  fullpath: string;
-}): void {
+export function handleMainCommand(options: UZDirParams): void {
   try {
-    // 将字符串形式的布尔值转换为实际的布尔值
-    let fullpath = true;
-    if (
-      ["false", "0", "", "null", "undefined"].includes(options.fullpath) ||
-      options.fullpath === "false" ||
-      options.fullpath === "0"
-    ) {
-      fullpath = false;
-    }
-
-    const extractor = new UZDir(
-      options.input,
-      options.output,
-      options.password,
-      options.filter || null,
-      parseInt(options.maxConcurrency) || os.cpus().length,
-      options.zipFormat || ".zip",
-      options.passwordMap || null,
-      fullpath,
-      options.ignore || null,
-      options.log || false,
-    );
-
+    const extractor = new UZDir(handleUzdirOptions(options));
     extractor.extractAll().catch((error) => {
       console.error(`${t("messages.errorPrefix")}`, error);
       process.exit(1);

@@ -26,6 +26,7 @@ A lightweight batch decompression tool for compressed files based on `TypeScript
 - 🙈 Supports ignoring specific files/directories when scanning compressed files, hidden files are ignored by default
 - 📄 Supports decompressing single files
 - 📝 Log output location can be controlled
+- 🤖 Supports Model Context Protocol (MCP) for AI integration
 
 ## 🚀 Installation
 
@@ -62,6 +63,23 @@ Or run in the project directory:
 ```bash
 bun run uzdir -- -i <input directory> -o <output directory> [-p <password>] [--filter <filter path>] [--maxConcurrency <concurrency>] [--zipFormat <format>] [--passwordMap <password mapping file>] [--fullpath <true|false>]
 ```
+
+### Model Context Protocol (MCP) Usage
+
+UZDir supports the Model Context Protocol (MCP), allowing AI models to directly interact with the tool. This enables AI assistants to decompress files and create password maps programmatically.
+
+To start the MCP server, run:
+
+```bash
+uzdir mcp
+```
+
+The MCP server implements the standard MCP protocol and provides two tools:
+
+1. `extract_directory` - Recursively decompresses all specified compressed files in a directory
+2. `create_password_map` - Creates a password mapping file
+
+When an AI model connects to the MCP server, it can discover and use these tools through the standard MCP protocol.
 
 ### 🌐 Language Switching
 

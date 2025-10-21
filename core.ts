@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import os from "os";
 import ansiColors from "ansi-colors";
 import colors from "ansi-colors";
 import cliProgress from "cli-progress";
@@ -12,6 +11,8 @@ import {
 } from "./utils";
 import { Logger } from "./logger";
 import { t } from "./i18n";
+import { CPU_COUNTS } from "./config";
+import type { UZDirOptions } from "./types";
 
 const progressBarPreset = {
   format: `\r{title} ${
@@ -55,18 +56,20 @@ export class UZDir {
     progressBarPreset,
   );
 
-  constructor(
-    inputDir: string,
-    outputDir: string,
-    password: string,
-    filterFile: string | null = null,
-    maxConcurrency: number = os.cpus().length,
-    zipFormat: string = ".zip",
-    passwordMapPath: string | null = null,
-    fullpath: boolean = true,
-    ignorePattern: string | null = null,
-    withLog: boolean = false,
-  ) {
+  constructor(options: UZDirOptions) {
+    const {
+      inputDir,
+      outputDir,
+      password,
+      filterFile = null,
+      maxConcurrency = CPU_COUNTS,
+      zipFormat = `.zip,.rar`,
+      passwordMapPath = null,
+      fullpath = true,
+      ignorePattern = null,
+      withLog = false,
+    } = options;
+
     this.inputDir = path.resolve(inputDir);
     this.outputDir = path.resolve(outputDir);
     this.password = password;
@@ -85,7 +88,10 @@ export class UZDir {
       try {
         const passwordMapContent = fs.readFileSync(passwordMapPath, "utf-8");
         this.passwordMap = JSON.parse(passwordMapContent);
-        this.L.log(`🔐 ${t("messages.passwordMapLoaded", { path: passwordMapPath })}`, true);
+        this.L.log(
+          `🔐 ${t("messages.passwordMapLoaded", { path: passwordMapPath })}`,
+          true,
+        );
       } catch (error) {
         this.L.error(
           `❌ ${t("messages.fileError")}: ${passwordMapPath}`,
@@ -228,10 +234,18 @@ export class UZDir {
           const stat = fs.statSync(file);
           if (stat.isFile()) {
             fs.unlinkSync(file);
-            this.L.log(`${t("messages.filteredFile")}：${path.relative(outputPath, file)}`);
+            this.L.log(
+              `${t("messages.filteredFile")}：${
+                path.relative(outputPath, file)
+              }`,
+            );
           } else if (stat.isDirectory()) {
             fs.rmdirSync(file, { recursive: true });
-            this.L.log(`${t("messages.filteredDir")}：${path.relative(outputPath, file)}`);
+            this.L.log(
+              `${t("messages.filteredDir")}：${
+                path.relative(outputPath, file)
+              }`,
+            );
           }
         } catch (error) {
           this.L.error(`❌ ${t("messages.error")}: ${file}`, error);
@@ -310,7 +324,9 @@ export class UZDir {
       log: "\t",
     });
 
-    this.L.log(`[${indexFlag}] ${t("messages.startExtracting")}:${zipFilePath}`);
+    this.L.log(
+      `[${indexFlag}] ${t("messages.startExtracting")}:${zipFilePath}`,
+    );
 
     const startTime = Date.now();
 
@@ -338,7 +354,11 @@ export class UZDir {
           )
         } ${ansiColors.gray(`${t("messages.duration")}:${timeUsed}`)}`,
       });
-      this.L.log(`[${indexFlag}] ${t("messages.completed")}:${zipFilePath}, ${t("messages.duration")}:${timeUsed}`);
+      this.L.log(
+        `[${indexFlag}] ${t("messages.completed")}:${zipFilePath}, ${
+          t("messages.duration")
+        }:${timeUsed}`,
+      );
       this.processedCount++;
       return true;
     } catch (error) {
@@ -351,7 +371,10 @@ export class UZDir {
       });
       this.errorCount++;
       this.errorPaths.push(zipFilePath);
-      this.L.error(`[${indexFlag}] ${t("messages.extractError")}:${zipFilePath}`, error);
+      this.L.error(
+        `[${indexFlag}] ${t("messages.extractError")}:${zipFilePath}`,
+        error,
+      );
       return false;
     }
   }
@@ -383,10 +406,19 @@ export class UZDir {
       // 🗂️ 这个 icon 的宽度在命令行中展示时表现为坍缩形态，因此需要多一个空格来优化展示
       (msg) => msg.replace("🗂️", "🗂️ "),
     );
-    this.L.log(`${t("messages.defaultPassword")}: ${this.password ? "***" : t("messages.none")}`, true);
+    this.L.log(
+      `${t("messages.defaultPassword")}: ${
+        this.password ? "***" : t("messages.none")
+      }`,
+      true,
+    );
     if (this.passwordMap) {
       this.L.log(
-        `${t("messages.passwordMap", { count: Object.keys(this.passwordMap).length })}`,
+        `${
+          t("messages.passwordMap", {
+            count: Object.keys(this.passwordMap).length,
+          })
+        }`,
         true,
       );
     }
@@ -402,7 +434,12 @@ export class UZDir {
       this.L.log(`${t("messages.ignore")}: ${this.ignorePattern}`, true);
     }
     this.L.log(`${t("messages.maxConcurrency")}: ${this.maxConcurrency}`, true);
-    this.L.log(`${t("messages.fullPath")}: ${this.fullpath ? t("messages.yes") : t("messages.no")}`, true);
+    this.L.log(
+      `${t("messages.fullPath")}: ${
+        this.fullpath ? t("messages.yes") : t("messages.no")
+      }`,
+      true,
+    );
     this.startTime = new Date(Date.now());
     this.L.log(t("messages.logSeparator"), true, (e) => ansiColors.white(e));
 
@@ -499,18 +536,30 @@ export class UZDir {
     // 输出总结
     this.L.log(t("messages.logSeparator"), true, (e) => ansiColors.white(e));
     this.L.log(t("messages.complete"), true);
-    this.L.log(`${t("messages.success")}: ${this.processedCount} ${t("messages.files")}`, true);
+    this.L.log(
+      `${t("messages.success")}: ${this.processedCount} ${t("messages.files")}`,
+      true,
+    );
     if (this.errorCount > 0) {
-      this.L.log(`${t("messages.failed")}: ${this.errorCount} ${t("messages.files")}`, true);
+      this.L.log(
+        `${t("messages.failed")}: ${this.errorCount} ${t("messages.files")}`,
+        true,
+      );
       this.L.log(
         `${t("messages.failedList")}: \n${
           this.errorPaths.map((e, i) => `\t- ${i + 1}.${e}`).join("\n")
         }`,
         true,
       );
-      this.L.log(`${t("messages.logFile")}: ${this.L.getLogFilePath("error")}`, true);
+      this.L.log(
+        `${t("messages.logFile")}: ${this.L.getLogFilePath("error")}`,
+        true,
+      );
     }
-    this.L.log(`${t("messages.extractLog")}: ${this.L.getLogFilePath("log")}`, true);
+    this.L.log(
+      `${t("messages.extractLog")}: ${this.L.getLogFilePath("log")}`,
+      true,
+    );
     this.endTime = new Date(Date.now());
 
     this.L.log(
@@ -569,5 +618,37 @@ export class UZDir {
     }
 
     return false;
+  }
+
+  /**
+   * 获取处理成功的文件数量
+   */
+  public getProcessedCount(): number {
+    return this.processedCount;
+  }
+
+  /**
+   * 获取处理失败的文件数量
+   */
+  public getErrorCount(): number {
+    return this.errorCount;
+  }
+
+  /**
+   * 获取处理失败的文件路径列表
+   */
+  public getErrorPaths(): string[] {
+    return this.errorPaths;
+  }
+
+  /**
+   * 获取处理持续时间
+   */
+  public getDuration(): string {
+    if (this.startTime && this.endTime) {
+      const durationMs = this.endTime.getTime() - this.startTime.getTime();
+      return formatMillisecondsToTime(durationMs);
+    }
+    return "未知";
   }
 }

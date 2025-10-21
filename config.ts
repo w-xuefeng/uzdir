@@ -3,6 +3,8 @@ import path from "path";
 import os from "os";
 import { Language } from "./types";
 
+export const CPU_COUNTS = os.cpus().length;
+
 // 配置文件路径
 const CONFIG_DIR = path.join(os.homedir(), ".uzdir");
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");

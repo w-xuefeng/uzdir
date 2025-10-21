@@ -26,6 +26,7 @@
 - 🙈 压缩文件扫描时支持忽略特定文件/目录，默认忽略隐藏文件
 - 📄 支持单个文件解压
 - 📝 可控制日志输出位置
+- 🤖 支持模型上下文协议 (MCP)，便于 AI 集成
 
 ## 🚀 安装
 
@@ -62,6 +63,23 @@ uzdir -i <输入目录> -o <输出目录> [-p <密码>] [--filter <过滤路径>
 ```bash
 bun run uzdir -- -i <输入目录> -o <输出目录> [-p <密码>] [--filter <过滤路径>] [--maxConcurrency <并发数>] [--zipFormat <格式>] [--passwordMap <密码映射文件>] [--fullpath <true|false>]
 ```
+
+### 模型上下文协议 (MCP) 使用
+
+UZDir 支持模型上下文协议 (MCP)，允许 AI 模型直接与工具交互。这使得 AI 助手能够以编程方式解压文件和创建密码映射。
+
+要启动 MCP 服务器，请运行：
+
+```bash
+uzdir mcp
+```
+
+MCP 服务器实现了标准的 MCP 协议，提供两个工具：
+
+1. `extract_directory` - 递归解压目录中的所有指定压缩文件
+2. `create_password_map` - 创建密码映射文件
+
+当 AI 模型连接到 MCP 服务器时，可以通过标准 MCP 协议发现和使用这些工具。
 
 ### 🌐 语言切换
 
