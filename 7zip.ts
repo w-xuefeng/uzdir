@@ -8,6 +8,24 @@ import ansiColors from "ansi-colors";
 import * as node7z from "node-7z";
 import type cliProgress from "cli-progress";
 
+const isMCPCalling = process.argv[2] === "mcp";
+const logger = (msg: string, level: "log" | "warn" | "error" = "log") => {
+  if (!isMCPCalling) {
+    console[level](msg);
+    return;
+  }
+  process.stdout.write(
+    JSON.stringify({
+      jsonrpc: "2.0",
+      method: "notifications/message",
+      params: {
+        level,
+        message: msg,
+      },
+    }) + "\n",
+  );
+};
+
 // 确保 path7z 具有执行权限
 try {
   // 检查文件是否存在以及是否已经有执行权限
@@ -17,10 +35,10 @@ try {
       // Windows 平台上检查文件扩展名是否为可执行文件扩展名
       const isExecutable = path7z.toLowerCase().endsWith(".exe");
       if (isExecutable) {
-        console.log(t("sevenZip.ready"));
+        logger(t("sevenZip.ready"));
       } else {
         // Windows 上重命名文件添加 .exe 扩展名
-        console.warn(t("sevenZip.missingExtension"));
+        logger(t("sevenZip.missingExtension"), "warn");
       }
     } else {
       // Unix/Linux/macOS 平台上的处理逻辑
@@ -30,18 +48,18 @@ try {
 
       if (!hasExecutePermission) {
         fs.chmodSync(path7z, 0o755);
-        console.log(t("sevenZip.permissionSet"));
+        logger(t("sevenZip.permissionSet"));
       } else {
-        console.log(t("sevenZip.ready"));
+        logger(t("sevenZip.ready"));
       }
     }
   } else {
-    console.warn(t("sevenZip.fileNotFound"), path7z);
+    logger(`${t("sevenZip.fileNotFound")} ${path7z}`, "warn");
   }
 } catch (error) {
-  console.warn(
-    t("sevenZip.permissionError"),
-    (error as Error).message,
+  logger(
+    `${t("sevenZip.permissionError")} ${(error as Error).message}`,
+    "warn",
   );
 }
 
