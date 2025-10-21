@@ -2,9 +2,13 @@
 
 [![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white)](https://bun.sh/)
 [![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 一个基于 `TypeScript`、`Bun` 和 `Node-7z` 构建的轻量级压缩文件批量解压工具，支持多种格式的压缩文件解压（如 zip、7z 等）和密码保护的文件解压 📦🔑
+
+[![NPM Last Update](https://img.shields.io/npm/last-update/uzdir?style=for-the-badge)](http://npmjs.com/package/uzdir)
+[![NPM Version](https://img.shields.io/npm/v/uzdir?style=for-the-badge)](http://npmjs.com/package/uzdir)
+[![NPM Downloads](https://img.shields.io/npm/dy/uzdir?style=for-the-badge)](http://npmjs.com/package/uzdir)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 简体中文 | [English](README.md)
 

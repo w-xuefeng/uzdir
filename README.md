@@ -2,9 +2,13 @@
 
 [![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white)](https://bun.sh/)
 [![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 A lightweight batch decompression tool for compressed files based on `TypeScript`, `Bun` and `Node-7z`, supporting decompression of various formats of compressed files (such as zip, 7z, etc.) and password-protected file decompression 📦🔑
+
+[![NPM Last Update](https://img.shields.io/npm/last-update/uzdir?style=for-the-badge)](http://npmjs.com/package/uzdir)
+[![NPM Version](https://img.shields.io/npm/v/uzdir?style=for-the-badge)](http://npmjs.com/package/uzdir)
+[![NPM Downloads](https://img.shields.io/npm/dy/uzdir?style=for-the-badge)](http://npmjs.com/package/uzdir)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 [简体中文](README-zh_CN.md) | English
 
