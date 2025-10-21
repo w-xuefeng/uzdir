@@ -100,6 +100,56 @@ const languagePacks: Record<Language, LanguagePack> = {
       unknownTool: "未知工具",
       requestError: "处理请求时出错",
       serverError: "MCP 服务器错误",
+      tools: {
+        extractDirectory: {
+          name: "extract_directory",
+          description: "递归解压目录中的所有指定压缩文件",
+          input: {
+            input: {
+              description: "输入目录路径或压缩文件路径",
+            },
+            output: {
+              description: "输出目录路径",
+            },
+            password: {
+              description: "解压密码",
+            },
+            filter: {
+              description: "要过滤的文件路径（压缩包内相对路径）",
+            },
+            maxConcurrency: {
+              description: "最大并发数，默认为CPU核心数",
+            },
+            zipFormat: {
+              description: "压缩文件格式，多个格式用逗号分隔，默认为 '.zip,.rar,.7z'",
+            },
+            passwordMap: {
+              description: "密码映射JSON文件路径",
+            },
+            ignore: {
+              description: "忽略文件/目录的模式，多个模式用逗号分隔",
+            },
+            fullpath: {
+              description: "是否使用完整路径解压(即创建同名子目录)，默认为 true",
+            },
+            log: {
+              description: "是否将日志输出到output目录，默认为false",
+            },
+          },
+        },
+        createPasswordMap: {
+          name: "create_password_map",
+          description: "创建密码映射文件",
+          input: {
+            passwordMap: {
+              description: '密码映射对象，格式为 { "filePath or fileName or fileExtension": "password" }',
+            },
+            outputPath: {
+              description: "密码映射文件输出路径",
+            },
+          },
+        },
+      },
     },
     sevenZip: {
       ready: "\n📁 UZDir 已经准备就绪\n",
@@ -208,6 +258,56 @@ const languagePacks: Record<Language, LanguagePack> = {
       unknownTool: "Unknown tool",
       requestError: "Error processing request",
       serverError: "MCP server error",
+      tools: {
+        extractDirectory: {
+          name: "extract_directory",
+          description: "Recursively decompress all specified compressed files in a directory",
+          input: {
+            input: {
+              description: "Input directory path or compressed file path",
+            },
+            output: {
+              description: "Output directory path",
+            },
+            password: {
+              description: "Decompression password",
+            },
+            filter: {
+              description: "File paths to filter (relative paths within the archive)",
+            },
+            maxConcurrency: {
+              description: "Maximum concurrency, defaults to CPU core count",
+            },
+            zipFormat: {
+              description: "Compressed file formats, multiple formats separated by commas, defaults to '.zip,.rar,.7z'",
+            },
+            passwordMap: {
+              description: "Password mapping JSON file path",
+            },
+            ignore: {
+              description: "Patterns for ignoring files/directories, multiple patterns separated by commas",
+            },
+            fullpath: {
+              description: "Whether to use full path decompression (create subdirectories with the same name), defaults to true",
+            },
+            log: {
+              description: "Whether to output logs to the output directory, defaults to false",
+            },
+          },
+        },
+        createPasswordMap: {
+          name: "create_password_map",
+          description: "Create a password mapping file",
+          input: {
+            passwordMap: {
+              description: 'Password mapping object in the format { "filePath or fileName or fileExtension": "password" }',
+            },
+            outputPath: {
+              description: "Password mapping file output path",
+            },
+          },
+        },
+      },
     },
     sevenZip: {
       ready: "\n📁 UZDir is ready\n",

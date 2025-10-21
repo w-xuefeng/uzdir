@@ -46,76 +46,91 @@ export async function runMCPServer() {
   // Define available tools
   const tools = [
     {
-      name: "extract_directory",
-      description:
-        "Recursively decompress all specified compressed files in a directory",
+      name: t("mcp.tools.extractDirectory.name"),
+      description: t("mcp.tools.extractDirectory.description"),
       inputSchema: {
         type: "object",
         properties: {
           input: {
             type: "string",
-            description: "Input directory path or compressed file path",
+            description: t(
+              "mcp.tools.extractDirectory.input.input.description",
+            ),
           },
           output: {
             type: "string",
-            description: "Output directory path",
+            description: t(
+              "mcp.tools.extractDirectory.input.output.description",
+            ),
           },
           password: {
             type: "string",
-            description: "Decompression password",
+            description: t(
+              "mcp.tools.extractDirectory.input.password.description",
+            ),
           },
           filter: {
             type: "string",
-            description:
-              "File paths to filter (relative paths within the archive)",
+            description: t(
+              "mcp.tools.extractDirectory.input.filter.description",
+            ),
           },
           maxConcurrency: {
             type: "number",
-            description: "Maximum concurrency, defaults to CPU core count",
+            description: t(
+              "mcp.tools.extractDirectory.input.maxConcurrency.description",
+            ),
           },
           zipFormat: {
             type: "string",
-            description:
-              "Compressed file formats, multiple formats separated by commas, defaults to '.zip,.rar,.7z'",
+            description: t(
+              "mcp.tools.extractDirectory.input.zipFormat.description",
+            ),
           },
           passwordMap: {
             type: "string",
-            description: "Password mapping JSON file path",
+            description: t(
+              "mcp.tools.extractDirectory.input.passwordMap.description",
+            ),
           },
           ignore: {
             type: "string",
-            description:
-              "Patterns for ignoring files/directories, multiple patterns separated by commas",
+            description: t(
+              "mcp.tools.extractDirectory.input.ignore.description",
+            ),
           },
           fullpath: {
             type: "boolean",
-            description:
-              "Whether to use full path decompression (create subdirectories with the same name), defaults to true",
+            description: t(
+              "mcp.tools.extractDirectory.input.fullpath.description",
+            ),
           },
           log: {
             type: "boolean",
-            description:
-              "Whether to output logs to the output directory, defaults to false",
+            description: t("mcp.tools.extractDirectory.input.log.description"),
           },
         },
         required: ["input", "output"],
       },
     },
     {
-      name: "create_password_map",
-      description: "Create a password mapping file",
+      name: t("mcp.tools.createPasswordMap.name"),
+      description: t("mcp.tools.createPasswordMap.description"),
       inputSchema: {
         type: "object",
         properties: {
           passwordMap: {
             type: "object",
-            description:
-              'Password mapping object in the format { "filePath or fileName or fileExtension": "password" }',
+            description: t(
+              "mcp.tools.createPasswordMap.input.passwordMap.description",
+            ),
             additionalProperties: { type: "string" },
           },
           outputPath: {
             type: "string",
-            description: "Password mapping file output path",
+            description: t(
+              "mcp.tools.createPasswordMap.input.outputPath.description",
+            ),
           },
         },
         required: ["passwordMap", "outputPath"],
