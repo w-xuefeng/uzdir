@@ -1,13 +1,14 @@
 {
   "name": "uzdir",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "scripts": {
     "uzdir": "bun run uzdir.ts",
     "clean": "rimraf test/to",
     "test": "bun clean && bun uzdir -i test/from -o test/to -p 123456 --passwordMap test/password.json --ignore ignore.zip --filter 'filter.txt,*/**/.DS_Store' --zipFormat '.zip,.rar,.7z' --log",
     "test:nosubdir": "bun run test --fullpath false",
     "lang": "bun run uzdir.ts lang",
-    "mcp": "bun run uzdir.ts mcp"
+    "mcp": "bun run uzdir.ts mcp",
+    "mcp:inspector": "bunx @modelcontextprotocol/inspector "
   },
   "scriptDescriptions": {
     "mcp": "启动 MCP (Model Context Protocol) 服务，用于与支持 MCP 的客户端集成，提供文件解压能力"
