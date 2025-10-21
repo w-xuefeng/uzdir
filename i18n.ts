@@ -93,6 +93,13 @@ const languagePacks: Record<Language, LanguagePack> = {
       thread: "线程",
       errorPrefix: "💥 程序执行出错:",
     },
+    mcp: {
+      missingArguments: "参数缺失",
+      passwordMapCreated: "密码映射文件已创建",
+      passwordMapCreationFailed: "创建密码映射文件失败",
+      unknownTool: "未知工具",
+      requestError: "处理请求时出错",
+    },
     sevenZip: {
       ready: "\n📁 UZDir 已经准备就绪\n",
       missingExtension: "⚠️ Windows 平台上 7za 文件可能缺少正确的扩展名",
@@ -193,57 +200,64 @@ const languagePacks: Record<Language, LanguagePack> = {
       thread: "Thread",
       errorPrefix: "💥 Program execution error:",
     },
+    mcp: {
+      missingArguments: "Missing arguments",
+      passwordMapCreated: "Password mapping file created",
+      passwordMapCreationFailed: "Failed to create password mapping file",
+      unknownTool: "Unknown tool",
+      requestError: "Error processing request",
+    },
     sevenZip: {
       ready: "\n📁 UZDir is ready\n",
-      missingExtension:
-        "⚠️ 7za file may be missing the correct extension on Windows platform",
+      missingExtension: "⚠️ 7za file may be missing the correct extension on Windows platform",
       fileNotFound: "⚠️ 7zip binary file not found:",
       permissionSet: "👌 7zip binary file execution permission set",
-      permissionError:
-        "⚠️ Unable to set 7zip binary file execution permission:",
+      permissionError: "⚠️ Failed to set 7zip binary file execution permission:",
       extracting: "Extracting:",
-      extractComplete: "Extraction complete",
+      extractComplete: "Extraction completed",
     },
   },
 };
 
-// 获取翻译文本
-export function t(key: string, params: Record<string, any> = {}): string {
-  const lang = getConfigLanguage();
-  const keys = key.split(".");
-  let value: string | LanguagePack | undefined =
-    languagePacks[lang as Language];
+// 获取当前语言
+function getCurrentLanguage(): Language {
+  return getConfigLanguage();
+}
 
+// 翻译函数
+export function t(key: string, params?: Record<string, string | number>): string {
+  const language = getCurrentLanguage();
+  const pack = languagePacks[language];
+
+  // 使用可选链和空值合并操作符安全地获取翻译文本
+  const keys = key.split(".");
+  let value: string | LanguagePack | undefined = pack;
+  
   for (const k of keys) {
     if (value && typeof value === "object" && k in value) {
       value = (value as LanguagePack)[k];
     } else {
-      // 如果找不到对应语言的键值，则返回英文版本
-      value = languagePacks.en_US;
-      for (const k2 of keys) {
-        if (value && typeof value === "object" && k2 in value) {
-          value = (value as LanguagePack)[k2];
-        } else {
-          value = undefined;
-          break;
-        }
-      }
-      break;
+      // 如果找不到对应键，返回原始键作为提示
+      return key;
     }
   }
 
+  // 如果最终值是字符串，则进行参数替换
   if (typeof value === "string") {
     let result = value;
-    for (const [paramKey, paramValue] of Object.entries(params)) {
-      result = result.replace(new RegExp(`{${paramKey}}`, "g"), paramValue);
+    if (params) {
+      for (const [paramKey, paramValue] of Object.entries(params)) {
+        result = result.replace(new RegExp(`\\{${paramKey}\\}`, "g"), String(paramValue));
+      }
     }
     return result;
   }
 
+  // 如果找不到对应翻译，返回原始键作为提示
   return key;
 }
 
-// 获取所有可用语言
+// 获取可用语言列表
 export function getAvailableLanguages(): Language[] {
   return Object.keys(languagePacks) as Language[];
 }

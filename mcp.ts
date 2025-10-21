@@ -8,6 +8,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { UZDir } from "./core.js";
 import { handleUzdirOptions } from "./cli.js";
+import { t } from "./i18n";
 import type { UZDirParams } from "./types.js";
 
 /**
@@ -136,7 +137,7 @@ export async function runMCPServer() {
         return {
           content: [{
             type: "text",
-            text: "参数缺失",
+            text: t("mcp.missingArguments"),
           }],
           isError: true,
         };
@@ -192,27 +193,34 @@ export async function runMCPServer() {
             // Get duration
             const duration = extractor.getDuration();
 
+            const L = extractor.getLogger();
+
             return {
               content: [{
                 type: "text",
-                text: `解压完成:
-- 成功处理: ${processedCount} 个文件
-- 失败: ${errorCount} 个文件
-- 总耗时: ${duration}
+                text: `${t("messages.completed")}:
+- ${t("messages.success")}: ${processedCount} ${t("messages.files")}
+- ${t("messages.failed")}: ${errorCount} ${t("messages.files")}
 ${
                   errorCount > 0
-                    ? `- 失败文件列表:\n${
+                    ? `- ${t("messages.failedList")}:\n${
                       errorPaths.map((e: string) => `  - ${e}`).join("\n")
-                    }`
+                    }\n- ${t("messages.logFile")}: ${
+                      L.getLogFilePath("error")
+                    }\n`
                     : ""
-                }`,
+                }- ${t("messages.extractLog")}: ${L.getLogFilePath("log")}\n${
+                  t("messages.duration")
+                }: ${duration}`,
               }],
             };
           } catch (error) {
             return {
               content: [{
                 type: "text",
-                text: `解压失败: ${(error as Error).message}`,
+                text: `${t("messages.failedStatus")}: ${
+                  (error as Error).message
+                }`,
               }],
               isError: true,
             };
@@ -237,14 +245,14 @@ ${
             return {
               content: [{
                 type: "text",
-                text: `密码映射文件已创建: ${outputPath}`,
+                text: `${t("mcp.passwordMapCreated")}: ${outputPath}`,
               }],
             };
           } catch (error) {
             return {
               content: [{
                 type: "text",
-                text: `创建密码映射文件失败: ${(error as Error).message}`,
+                text: `${t("mcp.passwordMapCreationFailed")}: ${(error as Error).message}`,
               }],
               isError: true,
             };
@@ -254,7 +262,7 @@ ${
           return {
             content: [{
               type: "text",
-              text: `未知工具: ${name}`,
+              text: `${t("mcp.unknownTool")}: ${name}`,
             }],
             isError: true,
           };
@@ -263,7 +271,7 @@ ${
       return {
         content: [{
           type: "text",
-          text: `处理请求时出错: ${(error as Error).message}`,
+          text: `${t("mcp.requestError")}: ${(error as Error).message}`,
         }],
         isError: true,
       };

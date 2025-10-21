@@ -651,4 +651,11 @@ export class UZDir {
     }
     return "未知";
   }
+
+  /**
+   * 获取 Logger实例
+   */
+  public getLogger(): Logger {
+    return this.L;
+  }
 }
