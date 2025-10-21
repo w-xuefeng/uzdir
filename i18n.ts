@@ -99,6 +99,7 @@ const languagePacks: Record<Language, LanguagePack> = {
       passwordMapCreationFailed: "创建密码映射文件失败",
       unknownTool: "未知工具",
       requestError: "处理请求时出错",
+      serverError: "MCP 服务器错误",
     },
     sevenZip: {
       ready: "\n📁 UZDir 已经准备就绪\n",
@@ -206,6 +207,7 @@ const languagePacks: Record<Language, LanguagePack> = {
       passwordMapCreationFailed: "Failed to create password mapping file",
       unknownTool: "Unknown tool",
       requestError: "Error processing request",
+      serverError: "MCP server error",
     },
     sevenZip: {
       ready: "\n📁 UZDir is ready\n",

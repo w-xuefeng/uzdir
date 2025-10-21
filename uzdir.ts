@@ -2,6 +2,7 @@
 
 import { handleLanguageCommand, initCLI } from "./cli";
 import { runMCPServer } from "./mcp";
+import { t } from "./i18n";
 
 // 检查是否是语言切换命令
 if (process.argv[2] === "lang") {
@@ -9,7 +10,7 @@ if (process.argv[2] === "lang") {
 } else if (process.argv[2] === "mcp") {
   // 启动 MCP 服务器
   runMCPServer().catch((error: Error) => {
-    console.error("MCP 服务器错误:", error);
+    console.error(`${t("mcp.serverError")}:`, error);
     process.exit(1);
   });
 } else {
