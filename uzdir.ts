@@ -15,6 +15,29 @@ import {
   truncateStringMiddleEnhanced,
 } from "./utils";
 import { Logger } from "./logger";
+import { t, setCurrentLanguage, getCurrentLanguage, getAvailableLanguages, Language } from "./i18n";
+
+// 检查是否是语言切换命令
+if (process.argv[2] === "lang") {
+  if (!process.argv[3]) {
+    // 显示当前语言和可用语言
+    console.log(`${t("lang.current")}: ${getCurrentLanguage()}`);
+    console.log(`${t("lang.available")}: ${getAvailableLanguages().join(", ")}`);
+  } else {
+    // 设置语言
+    const language = process.argv[3];
+    const availableLanguages = getAvailableLanguages();
+    if (availableLanguages.includes(language as Language)) {
+      setCurrentLanguage(language as Language);
+      console.log(`${t("lang.set")}: ${language}`);
+    } else {
+      console.error(`${t("lang.invalid")}: ${language}`);
+      console.log(`${t("lang.available")}: ${availableLanguages.join(", ")}`);
+      process.exit(1);
+    }
+  }
+  process.exit(0);
+}
 
 const progressBarPreset = {
   format: `\r{title} ${
@@ -28,7 +51,7 @@ const progressBarPreset = {
 
 /**
  * 压缩文件解压工具
- * 支持递归解压目录下的所有指定的压缩文件（默认仅解压.zip），保持目录结构
+ * 支持递归解压目录下的所有指定的压缩文件，保持目录结构
  */
 class UZDir {
   private inputDir: string;
@@ -88,10 +111,10 @@ class UZDir {
       try {
         const passwordMapContent = fs.readFileSync(passwordMapPath, "utf-8");
         this.passwordMap = JSON.parse(passwordMapContent);
-        this.L.log(`🔐 已加载密码映射文件: ${passwordMapPath}`, true);
+        this.L.log(`🔐 ${t("messages.passwordMapLoaded", { path: passwordMapPath })}`, true);
       } catch (error) {
         this.L.error(
-          `❌ 无法读取或解析密码映射文件: ${passwordMapPath}`,
+          `❌ ${t("messages.fileError")}: ${passwordMapPath}`,
           error as Error,
           true,
         );
@@ -126,7 +149,7 @@ class UZDir {
         }
       }
     } catch (error) {
-      this.L.error(`❌ 遍历目录时出错: ${dir}`, error, true);
+      this.L.error(`❌ ${t("messages.processingError")}: ${dir}`, error, true);
     }
 
     return zipFiles;
@@ -231,17 +254,17 @@ class UZDir {
           const stat = fs.statSync(file);
           if (stat.isFile()) {
             fs.unlinkSync(file);
-            this.L.log(`🙅 已过滤文件：${path.relative(outputPath, file)}`);
+            this.L.log(`${t("messages.filteredFile")}：${path.relative(outputPath, file)}`);
           } else if (stat.isDirectory()) {
             fs.rmdirSync(file, { recursive: true });
-            this.L.log(`🙅 已过滤目录：${path.relative(outputPath, file)}`);
+            this.L.log(`${t("messages.filteredDir")}：${path.relative(outputPath, file)}`);
           }
         } catch (error) {
-          this.L.error(`❌ 删除文件/目录时出错: ${file}`, error);
+          this.L.error(`❌ ${t("messages.error")}: ${file}`, error);
         }
       }
     } catch (error) {
-      this.L.error(`❌ Glob匹配出错: ${globPattern}`, error);
+      this.L.error(`❌ ${t("messages.globError")}: ${globPattern}`, error);
     }
   }
 
@@ -269,17 +292,17 @@ class UZDir {
             if (stat.isFile()) {
               try {
                 fs.unlinkSync(filterFile);
-                this.L.log(`🙅 已过滤文件：${filterFile}`);
+                this.L.log(`${t("messages.filteredFile")}：${filterFile}`);
               } catch (error) {
-                this.L.error(`❌ 删除文件时出错: ${filterFile}`, error);
+                this.L.error(`❌ ${t("messages.error")}: ${filterFile}`, error);
               }
             }
             if (stat.isDirectory()) {
               try {
                 fs.rmdirSync(filterFile, { recursive: true });
-                this.L.log(`🙅 已过滤目录：${filterFile}`);
+                this.L.log(`${t("messages.filteredDir")}：${filterFile}`);
               } catch (error) {
-                this.L.error(`❌ 删除目录时出错: ${filterFile}`, error);
+                this.L.error(`❌ ${t("messages.error")}: ${filterFile}`, error);
               }
             }
           }
@@ -302,18 +325,18 @@ class UZDir {
     const outputPath = this.createOutputStructure(relativePath);
     const password = this.getPasswordForFile(zipFilePath);
     const concurrency = Math.min(this.maxConcurrency, total);
-    const indexFlag = `(线程${
+    const indexFlag = `(${t("messages.thread")}${
       String(concurrencyNumber).padStart(String(concurrency).length, "0")
     })[${String(currentIndex).padStart(String(total).length, "0")}/${total}]`;
 
     progressBar.update(0, {
       title: indexFlag,
       percentage: 0,
-      status: "准备解压",
+      status: t("messages.preparing"),
       log: "\t",
     });
 
-    this.L.log(`[${indexFlag}] 开始解压:${zipFilePath}`);
+    this.L.log(`[${indexFlag}] ${t("messages.startExtracting")}:${zipFilePath}`);
 
     const startTime = Date.now();
 
@@ -330,7 +353,7 @@ class UZDir {
       await this.removeFilters(outputPath);
       const timeUsed = formatMillisecondsToTime(Date.now() - startTime);
       progressBar.update({
-        status: ansiColors.green("解压完成"),
+        status: ansiColors.green(t("messages.completed")),
         log: `${
           ansiColors.cyan(
             truncateStringMiddleEnhanced(
@@ -339,22 +362,22 @@ class UZDir {
               25,
             ),
           )
-        } ${ansiColors.gray(`耗时:${timeUsed}`)}`,
+        } ${ansiColors.gray(`${t("messages.duration")}:${timeUsed}`)}`,
       });
-      this.L.log(`[${indexFlag}] 解压完成:${zipFilePath}, 耗时:${timeUsed}`);
+      this.L.log(`[${indexFlag}] ${t("messages.completed")}:${zipFilePath}, ${t("messages.duration")}:${timeUsed}`);
       this.processedCount++;
       return true;
     } catch (error) {
       const err = error as Error & { stderr: string };
       progressBar.update({
-        status: `${ansiColors.red("解压失败")}`,
+        status: `${ansiColors.red(t("messages.failedStatus"))}`,
         log: ansiColors.red(
           String(err?.["stderr"]).trim().replace(/\n/g, " ") ?? err.message,
         ),
       });
       this.errorCount++;
       this.errorPaths.push(zipFilePath);
-      this.L.error(`[${indexFlag}] 解压异常:${zipFilePath}`, error);
+      this.L.error(`[${indexFlag}] ${t("messages.extractError")}:${zipFilePath}`, error);
       return false;
     }
   }
@@ -377,39 +400,37 @@ class UZDir {
       this.supportSingleFileFormat();
     }
 
-    this.L.log("🚀 开始解压过程...", true);
-    this.L.log(`📁 输入: ${this.inputDir}`, true);
-    this.L.log(`📂 输出目录: ${this.outputDir}`, true);
+    this.L.log(t("messages.start"), true);
+    this.L.log(`${t("messages.input")}: ${this.inputDir}`, true);
+    this.L.log(`${t("messages.output")}: ${this.outputDir}`, true);
     this.L.log(
-      `🗂️ 待解压文件格式: ${this.zipFormat}`,
+      `${t("messages.formats")}: ${this.zipFormat}`,
       true,
       // 🗂️ 这个 icon 的宽度在命令行中展示时表现为坍缩形态，因此需要多一个空格来优化展示
       (msg) => msg.replace("🗂️", "🗂️ "),
     );
-    this.L.log(`🔑 使用默认密码: ${this.password ? "***" : "无"}`, true);
+    this.L.log(`${t("messages.defaultPassword")}: ${this.password ? "***" : t("messages.none")}`, true);
     if (this.passwordMap) {
       this.L.log(
-        `📖 使用密码映射文件，包含 ${
-          Object.keys(this.passwordMap).length
-        } 个文件的专用密码`,
+        `${t("messages.passwordMap", { count: Object.keys(this.passwordMap).length })}`,
         true,
       );
     }
     if (this.filterFile) {
       this.L.log(
-        `⏭️ 过滤文件: ${this.filterFile}`,
+        `${t("messages.filter")}: ${this.filterFile}`,
         true,
         // ⏭️ 这个 icon 的宽度在命令行中展示时表现为坍缩形态，因此需要多一个空格来优化展示
         (msg) => msg.replace("⏭️", "⏭️ "),
       );
     }
     if (this.ignorePattern) {
-      this.L.log(`🚫 忽略模式: ${this.ignorePattern}`, true);
+      this.L.log(`${t("messages.ignore")}: ${this.ignorePattern}`, true);
     }
-    this.L.log(`🔁 最大并发数: ${this.maxConcurrency}`, true);
-    this.L.log(`📌 完整路径解压: ${this.fullpath ? "是" : "否"}`, true);
+    this.L.log(`${t("messages.maxConcurrency")}: ${this.maxConcurrency}`, true);
+    this.L.log(`${t("messages.fullPath")}: ${this.fullpath ? t("messages.yes") : t("messages.no")}`, true);
     this.startTime = new Date(Date.now());
-    this.L.log("─".repeat(50), true, (e) => ansiColors.white(e));
+    this.L.log(t("messages.logSeparator"), true, (e) => ansiColors.white(e));
 
     let zipFiles: string[] = [];
 
@@ -418,7 +439,7 @@ class UZDir {
       if (this.isZipFile(this.inputDir)) {
         zipFiles = [this.inputDir];
       } else {
-        const msg = `输入文件不是有效的压缩文件: ${this.inputDir}`;
+        const msg = t("messages.invalidFile") + `: ${this.inputDir}`;
         this.L.error(msg, new Error(msg), true);
         return;
       }
@@ -426,7 +447,7 @@ class UZDir {
       // 输入是目录
       // 检查输入目录是否存在
       if (!fs.existsSync(this.inputDir)) {
-        const msg = `输入目录不存在: ${this.inputDir}`;
+        const msg = t("messages.dirNotExists") + `: ${this.inputDir}`;
         this.L.error(
           msg,
           new Error(msg),
@@ -440,17 +461,17 @@ class UZDir {
     }
 
     if (zipFiles.length === 0) {
-      this.L.log("ℹ️  未找到压缩文件", true);
+      this.L.log(t("messages.noZipFiles"), true);
       return;
     }
 
-    this.L.log(`📦 找到 ${zipFiles.length} 个压缩文件`, true);
+    this.L.log(t("messages.found", { count: zipFiles.length }), true);
     const total = zipFiles.length;
 
     // 使用连续任务调度实现并发
     const concurrency = Math.min(this.maxConcurrency, total);
-    this.L.log(`🔁 实际并发数: ${concurrency}`, true);
-    this.L.log("─".repeat(50), true, (e) => ansiColors.white(e));
+    this.L.log(`${t("messages.actualConcurrency")}: ${concurrency}`, true);
+    this.L.log(t("messages.logSeparator"), true, (e) => ansiColors.white(e));
 
     const progressBars = Array.from(
       { length: concurrency },
@@ -458,7 +479,7 @@ class UZDir {
         this.multiProgressBar.create(100, 0, {
           title: "",
           percentage: 0,
-          status: "处理中...",
+          status: t("messages.processing"),
           log: "\t",
         }),
     );
@@ -502,24 +523,24 @@ class UZDir {
     this.multiProgressBar.stop();
 
     // 输出总结
-    this.L.log("─".repeat(50), true, (e) => ansiColors.white(e));
-    this.L.log("📊 解压完成!", true);
-    this.L.log(`✅ 成功处理: ${this.processedCount} 个文件`, true);
+    this.L.log(t("messages.logSeparator"), true, (e) => ansiColors.white(e));
+    this.L.log(t("messages.complete"), true);
+    this.L.log(`${t("messages.success")}: ${this.processedCount} ${t("messages.files")}`, true);
     if (this.errorCount > 0) {
-      this.L.log(`❌ 失败: ${this.errorCount} 个文件`, true);
+      this.L.log(`${t("messages.failed")}: ${this.errorCount} ${t("messages.files")}`, true);
       this.L.log(
-        `❌ 失败文件列表: \n${
+        `${t("messages.failedList")}: \n${
           this.errorPaths.map((e, i) => `\t- ${i + 1}.${e}`).join("\n")
         }`,
         true,
       );
-      this.L.log(`📝 错误日志: ${this.L.getLogFilePath("error")}`, true);
+      this.L.log(`${t("messages.logFile")}: ${this.L.getLogFilePath("error")}`, true);
     }
-    this.L.log(`📔 解压日志: ${this.L.getLogFilePath("log")}`, true);
+    this.L.log(`${t("messages.extractLog")}: ${this.L.getLogFilePath("log")}`, true);
     this.endTime = new Date(Date.now());
 
     this.L.log(
-      `🕐︎ 开始时间: ${
+      `${t("messages.startTime")}: ${
         this.startTime.toLocaleString("zh-CN", {
           timeZone: "Asia/Shanghai",
           hour12: false,
@@ -528,7 +549,7 @@ class UZDir {
       true,
     );
     this.L.log(
-      `🕜︎ 完成时间: ${
+      `${t("messages.endTime")}: ${
         this.endTime.toLocaleString("zh-CN", {
           timeZone: "Asia/Shanghai",
           hour12: false,
@@ -537,7 +558,7 @@ class UZDir {
       true,
     );
     this.L.log(
-      `⌛ 总耗时: ${
+      `${t("messages.duration")}: ${
         formatMillisecondsToTime(
           this.endTime.getTime() - this.startTime.getTime(),
         )
@@ -581,41 +602,39 @@ class UZDir {
 const program = new Command();
 
 program
-  .name("uzdir")
-  .description(
-    "递归解压目录下的所有指定类型的压缩文件（默认仅解压.zip），并保持目录结构",
-  )
-  .version(pkg.version, "-v, --version")
-  .version(pkg.version, "-V, --VERSION")
-  .requiredOption("-i, --input <dir>", "输入目录路径或压缩文件路径")
-  .requiredOption("-o, --output <dir>", "输出目录路径")
-  .option("-p, --password <password>", "解压密码", "")
-  .option("--filter <filterpath>", "要过滤的文件路径（ZIP内相对路径）")
+  .name(t("cli.name"))
+  .description(t("cli.description"))
+  .version(pkg.version, t("cli.version"))
+  .version(pkg.version, t("cli.versionAlias"))
+  .requiredOption(t("cli.input"), t("cli.inputDescription"))
+  .requiredOption(t("cli.output"), t("cli.outputDescription"))
+  .option(t("cli.password"), t("cli.passwordDescription"), "")
+  .option(t("cli.filter"), t("cli.filterDescription"))
   .option(
-    "--maxConcurrency <number>",
-    "最大并发数，默认为CPU核心数",
+    t("cli.maxConcurrency"),
+    t("cli.maxConcurrencyDescription"),
     `${os.cpus().length}`,
   )
   .option(
-    "--zipFormat <formats>",
-    "压缩文件格式，多个格式用逗号分隔，默认为.zip,.rar",
+    t("cli.zipFormat"),
+    t("cli.zipFormatDescription"),
     ".zip,.rar",
   )
   .option(
-    "--passwordMap <filepath>",
-    '密码映射JSON文件路径, 文件中为JSON格式，格式为 { "filePath or fileName or fileExtension": "password" }',
+    t("cli.passwordMap"),
+    t("cli.passwordMapDescription"),
   )
   .option(
-    "--ignore <patterns>",
-    "忽略文件/目录的模式，多个模式用逗号分隔，支持简单glob模式，默认忽略隐藏文件",
+    t("cli.ignore"),
+    t("cli.ignoreDescription"),
   )
   .option(
-    "--log",
-    "是否将日志输出到output目录，默认为false",
+    t("cli.log"),
+    t("cli.logDescription"),
   )
   .option(
-    "--fullpath <flag>",
-    "是否使用完整路径解压(即创建同名子目录)，默认为 true，设为 false、0 或 '0' 等 falsy 将会把所有解压后的文件提取到一个目录中",
+    t("cli.fullpath"),
+    t("cli.fullpathDescription"),
     "true",
   )
   .action(async (options) => {

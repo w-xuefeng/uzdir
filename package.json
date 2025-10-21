@@ -5,7 +5,8 @@
     "uzdir": "bun run uzdir.ts",
     "clean": "rimraf test/to",
     "test": "bun clean && bun uzdir -i test/from -o test/to -p 123456 --passwordMap test/password.json --ignore ignore.zip --filter 'filter.txt,*/**/.DS_Store' --zipFormat '.zip,.rar,.7z' --log",
-    "test:nosubdir": "bun run test --fullpath false"
+    "test:nosubdir": "bun run test --fullpath false",
+    "lang": "bun run uzdir.ts lang"
   },
   "bin": {
     "uzdir": "uzdir.ts"

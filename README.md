@@ -4,38 +4,38 @@
 [![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-一个基于 `TypeScript`、`Bun` 和 `Node-7z` 构建的轻量级压缩文件批量解压工具，支持多种格式的压缩文件解压（如 zip、7z 等）和密码保护的文件解压 📦🔑
+A lightweight batch decompression tool for compressed files based on `TypeScript`, `Bun` and `Node-7z`, supporting decompression of various formats of compressed files (such as zip, 7z, etc.) and password-protected file decompression 📦🔑
 
-## 🌟 功能特点
+## 🌟 Features
 
-- 📂 递归解压目录下的所有压缩文件，保持原有目录结构
-- 🗂️ 支持多种压缩格式（zip、rar、7z 等）
-- 🔐 支持密码保护的压缩文件解压
-- ⚡ 支持并发解压，充分利用多核 CPU 性能
-- 🚫 可通过命令行参数过滤特定文件或目录
-- ⚙️ 支持自定义最大并发数
-- 🔑 支持为不同文件指定不同密码
-- 📊 详细的处理日志和统计信息
-- 📍 支持指定是否创建同名子目录
-- 🙈 压缩文件扫描时支持忽略特定文件/目录，默认忽略隐藏文件
-- 📄 支持单个文件解压
-- 📝 可控制日志输出位置
+- 📂 Recursively decompress all compressed files in a directory, maintaining the original directory structure
+- 🗂️ Supports multiple compression formats (zip, rar, 7z, etc.)
+- 🔐 Supports decompression of password-protected compressed files
+- ⚡ Supports concurrent decompression, fully utilizing multi-core CPU performance
+- 🚫 Can filter specific files or directories through command line parameters
+- ⚙️ Supports custom maximum concurrency
+- 🔑 Supports specifying different passwords for different files
+- 📊 Detailed processing logs and statistics
+- 📍 Supports specifying whether to create subdirectories with the same name
+- 🙈 Supports ignoring specific files/directories when scanning compressed files, hidden files are ignored by default
+- 📄 Supports decompressing single files
+- 📝 Log output location can be controlled
 
-## 🚀 安装
+## 🚀 Installation
 
-确保你已经安装了 [Bun](https://bun.sh/) 环境：
+Make sure you have [Bun](https://bun.sh/) environment installed:
 
 ```bash
 curl -fsSL https://bun.sh/install | bash
 ```
 
-通过 bun 全局安装：
+Install globally via bun:
 
 ```bash
 bun add uzdir -g
 ```
 
-或者克隆项目并安装依赖：
+Or clone the project and install dependencies:
 
 ```bash
 git clone <repository-url>
@@ -43,39 +43,56 @@ cd uzdir
 bun install
 ```
 
-## 📖 使用方法
+## 📖 Usage
 
-安装后，可以直接使用 `uzdir` 命令：
-
-```bash
-uzdir -i <输入目录> -o <输出目录> [-p <密码>] [--filter <过滤路径>] [--maxConcurrency <并发数>] [--zipFormat <格式>] [--passwordMap <密码映射文件>] [--fullpath <true|false>]
-```
-
-或者在项目目录中运行：
+After installation, you can directly use the `uzdir` command:
 
 ```bash
-bun run uzdir -- -i <输入目录> -o <输出目录> [-p <密码>] [--filter <过滤路径>] [--maxConcurrency <并发数>] [--zipFormat <格式>] [--passwordMap <密码映射文件>] [--fullpath <true|false>]
+uzdir -i <input directory> -o <output directory> [-p <password>] [--filter <filter path>] [--maxConcurrency <concurrency>] [--zipFormat <format>] [--passwordMap <password mapping file>] [--fullpath <true|false>]
 ```
 
-### 🛠️ 参数说明
+Or run in the project directory:
 
-- `-i, --input <dir>`: 输入目录路径或压缩文件路径（必填）
-- `-o, --output <dir>`: 输出目录路径（必填）
-- `-p, --password <password>`: 解压密码（可选，默认无密码）
-- `--filter <filterpaths>`: 要过滤的文件路径（压缩包内相对路径），多个路径用逗号分隔（可选）。支持glob通配符：
-  - `*` 匹配单级目录中的任意名称
-  - `**` 匹配多级嵌套目录中的任意名称
-- `--maxConcurrency <number>`: 最大并发数（可选，默认为 CPU 核心数）
-- `--zipFormat <formats>`: 压缩文件格式，多个格式用逗号分隔（可选，默认为 `.zip,.rar`）
-- `--passwordMap <filepath>`: 密码映射 JSON 文件路径（可选）
-- `--ignore <patterns>`: 忽略文件/目录的模式，多个模式用逗号分隔，支持简单glob模式，默认忽略隐藏文件
-- `--log`: 是否将日志输出到output目录，默认为false
-- `--fullpath <flag>`: 是否使用完整路径解压(即创建同名子目录)，默认为 true，设为 false、0 或 '0' 等 falsy 将会把所有解压后的文件提取到一个目录中
-- `-v, --version`: 显示版本信息
+```bash
+bun run uzdir -- -i <input directory> -o <output directory> [-p <password>] [--filter <filter path>] [--maxConcurrency <concurrency>] [--zipFormat <format>] [--passwordMap <password mapping file>] [--fullpath <true|false>]
+```
 
-### 🔐 密码映射文件
+### 🌐 Language Switching
 
-使用 `--passwordMap` 参数可以为不同的压缩文件指定不同的密码。该参数接受一个 JSON 文件路径，文件内容格式如下：
+UZDir supports switching between English (default) and Chinese languages:
+
+```bash
+# View current language and available languages
+uzdir lang
+
+# Switch to Chinese
+uzdir lang zh_CN
+
+# Switch to English
+uzdir lang en_US
+```
+
+Language settings are persisted in the configuration file at `~/.uzdir/config.json`.
+
+### 🛠️ Parameter Description
+
+- `-i, --input <dir>`: Input directory path or compressed file path (required)
+- `-o, --output <dir>`: Output directory path (required)
+- `-p, --password <password>`: Decompression password (optional, no password by default)
+- `--filter <filterpaths>`: File paths to filter (relative paths within the compressed package), multiple paths separated by commas (optional). Supports glob wildcards:
+  - `*` Matches any name in a single-level directory
+  - `**` Matches any name in multi-level nested directories
+- `--maxConcurrency <number>`: Maximum concurrency (optional, defaults to CPU core count)
+- `--zipFormat <formats>`: Compressed file formats, multiple formats separated by commas (optional, defaults to `.zip,.rar`)
+- `--passwordMap <filepath>`: Password mapping JSON file path (optional)
+- `--ignore <patterns>`: Patterns to ignore files/directories, multiple patterns separated by commas, supports simple glob patterns, hidden files are ignored by default
+- `--log`: Whether to output logs to the output directory, default is false
+- `--fullpath <flag>`: Whether to use full path decompression (i.e. create subdirectories with the same name), default is true, setting to false, 0 or '0' and other falsy values will extract all decompressed files to one directory
+- `-v, --version`: Show version information
+
+### 🔐 Password Mapping File
+
+Using the `--passwordMap` parameter, you can specify different passwords for different compressed files. This parameter accepts a JSON file path with the following format:
 
 ```json
 {
@@ -87,137 +104,137 @@ bun run uzdir -- -i <输入目录> -o <输出目录> [-p <密码>] [--filter <�
 }
 ```
 
-密码匹配规则：
-1. 🔎 优先匹配完整绝对路径
-2. 🧩 然后匹配部分路径
-3. 📄 其次匹配文件名
-4. 🎯 最后匹配文件格式（扩展名）
-5. 🛡️ 如果都没有匹配到，则使用 `-p` 参数提供的默认密码
+Password matching rules:
+1. 🔎 Priority matching of complete absolute paths
+2. 🧩 Then matching partial paths
+3. 📄 Next matching file names
+4. 🎯 Finally matching file formats (extensions)
+5. 🛡️ If none match, use the default password provided by the `-p` parameter
 
-### 🚫 忽略文件/目录
+### 🚫 Ignoring Files/Directories
 
-使用 `--ignore` 参数可以在扫描压缩文件时忽略特定的文件或目录。支持简单的glob模式：
+Using the `--ignore` parameter, you can ignore specific files or directories when scanning compressed files. Supports simple glob patterns:
 
-- `*.tmp.zip` - 忽略所有.tmp.zip文件
-- `temp*` - 忽略所有以temp开头的文件/目录
-- `backup` - 忽略名为backup的文件/目录
+- `*.tmp.zip` - Ignore all .tmp.zip files
+- `temp*` - Ignore all files/directories starting with temp
+- `backup` - Ignore files/directories named backup
 
-默认情况下，所有以`.`开头的隐藏文件和目录都会被忽略。
+By default, all hidden files and directories starting with `.` are ignored.
 
-### 📍 解压路径模式
+### 📍 Decompression Path Mode
 
-UZDir 支持两种解压路径模式：
+UZDir supports two decompression path modes:
 
-1. **完整路径模式（默认）**：使用 `--fullpath true`（默认值）
-   - 保留压缩文件中的完整目录结构，创建同名子目录
+1. **Full Path Mode (Default)**: Use `--fullpath true` (default value)
+   - Maintain the complete directory structure in the compressed file and create subdirectories with the same name
 
-2. **非完整路径模式**：使用 `--fullpath false`、`--fullpath 0` 等 falsy 值
-   - 不创建同名子目录，仅将文件提取到指定目录下
+2. **Non-Full Path Mode**: Use `--fullpath false`, `--fullpath 0` and other falsy values
+   - Do not create subdirectories with the same name, only extract files to the specified directory
 
-### 📝 日志输出位置
+### 📝 Log Output Location
 
-UZDir 支持控制日志的输出位置：
+UZDir supports controlling the log output location:
 
-1. **默认位置**：日志默认输出到 `$HOME/.uzdir/logs` 目录
-2. **输出目录**：使用 `--log` 参数可以将日志输出到指定的输出目录
+1. **Default Location**: Logs are output to the `$HOME/.uzdir/logs` directory by default
+2. **Output Directory**: Using the `--log` parameter can output logs to the specified output directory
 
-### 💡 示例
+### 💡 Examples
 
-解压目录中的所有 ZIP 文件：
+Decompress all ZIP files in a directory:
 
 ```bash
 uzdir -i ./zips -o ./output
 ```
 
-解压单个压缩文件：
+Decompress a single compressed file:
 
 ```bash
 uzdir -i archive.zip -o ./output
 ```
 
-解压多种格式的压缩文件：
+Decompress compressed files in multiple formats:
 
 ```bash
 uzdir -i ./archives -o ./output --zipFormat ".zip,.7z,.rar"
 ```
 
-使用密码解压：
+Decompress with password:
 
 ```bash
 uzdir -i ./zips -o ./output -p mypassword
 ```
 
-使用密码映射文件解压：
+Decompress using password mapping file:
 
 ```bash
 uzdir -i ./zips -o ./output --passwordMap passwords.json
 ```
 
-同时使用默认密码和密码映射文件：
+Use default password and password mapping file simultaneously:
 
 ```bash
 uzdir -i ./zips -o ./output -p defaultpassword --passwordMap passwords.json
 ```
 
-解压并过滤特定文件：
+Decompress and filter specific files:
 
 ```bash
 uzdir -i ./zips -o ./output --filter unwanted.txt
 ```
 
-解压并过滤多个文件/目录：
+Decompress and filter multiple files/directories:
 
 ```bash
 uzdir -i ./zips -o ./output --filter unwanted.txt,temp_folder,__MACOSX
 ```
 
-使用glob通配符过滤文件：
+Filter files using glob wildcards:
 
 ```bash
 uzdir -i ./zips -o ./output --filter "*/__MACOSX,**/.DS_Store,*.tmp"
 ```
 
-设置最大并发数：
+Set maximum concurrency:
 
 ```bash
 uzdir -i ./zips -o ./output --maxConcurrency 4
 ```
 
-不创建同名子目录解压：
+Decompress without creating subdirectories with the same name:
 
 ```bash
 uzdir -i ./zips -o ./output --fullpath false
 ```
 
-使用忽略模式：
+Use ignore patterns:
 
 ```bash
 uzdir -i ./zips -o ./output --ignore "*.tmp.zip,*.log.zip,backup.7z"
 ```
 
-将日志输出到output目录：
+Output logs to the output directory:
 
 ```bash
 uzdir -i ./zips -o ./output --log
 ```
 
-## 🧪 测试
+## 🧪 Testing
 
-项目包含一个测试脚本，可以通过以下命令运行：
+The project includes a test script that can be run with the following command:
 
 ```bash
 bun run test
 ```
 
-这会执行预设的测试命令，解压 [test/from](test/from) 目录中的压缩文件到 [test/to](test/to) 目录。
+This will execute the preset test command, decompressing compressed files in the [test/from](test/from) directory to the [test/to](test/to) directory.
 
-## ⚙️ 技术栈
+## ⚙️ Tech Stack
 
-- [Bun](https://bun.sh/) - 运行时环境
-- [TypeScript](https://www.typescriptlang.org/) - 编程语言
-- [commander](https://github.com/tj/commander.js/) - 命令行参数解析
-- [node-7z](https://github.com/quentinrossetti/node-7z) - 7-Zip 包装器
+- [Bun](https://bun.sh/) - Runtime environment
+- [TypeScript](https://www.typescriptlang.org/) - Programming language
+- [commander](https://github.com/tj/commander.js/) - Command line argument parsing
+- [node-7z](https://github.com/quentinrossetti/node-7z) - 7-Zip wrapper
 
-## 📄 许可证
+## 📄 License
 
 MIT

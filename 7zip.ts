@@ -1,10 +1,11 @@
 import fs from "fs";
 import os from "os";
 import { Logger } from "./logger";
-import ansiColors from "ansi-colors";
-import * as node7z from "node-7z";
 import { path7z } from "7zip-bin-full";
 import { truncateStringMiddleEnhanced } from "./utils";
+import { t } from "./i18n";
+import ansiColors from "ansi-colors";
+import * as node7z from "node-7z";
 import type cliProgress from "cli-progress";
 
 // 确保 path7z 具有执行权限
@@ -16,10 +17,10 @@ try {
       // Windows 平台上检查文件扩展名是否为可执行文件扩展名
       const isExecutable = path7z.toLowerCase().endsWith(".exe");
       if (isExecutable) {
-        console.log("\n📁 UZDir 已经准备就绪\n");
+        console.log(t("sevenZip.ready"));
       } else {
         // Windows 上重命名文件添加 .exe 扩展名
-        console.warn("⚠️ Windows 平台上 7za 文件可能缺少正确的扩展名");
+        console.warn(t("sevenZip.missingExtension"));
       }
     } else {
       // Unix/Linux/macOS 平台上的处理逻辑
@@ -29,17 +30,17 @@ try {
 
       if (!hasExecutePermission) {
         fs.chmodSync(path7z, 0o755);
-        console.log("👌 7zip 二进制文件执行权限已设置");
+        console.log(t("sevenZip.permissionSet"));
       } else {
-        console.log("\n📁 UZDir 已经准备就绪\n");
+        console.log(t("sevenZip.ready"));
       }
     }
   } else {
-    console.warn("⚠️ 7zip 二进制文件不存在:", path7z);
+    console.warn(t("sevenZip.fileNotFound"), path7z);
   }
 } catch (error) {
   console.warn(
-    "⚠️ 无法设置 7zip 二进制文件执行权限:",
+    t("sevenZip.permissionError"),
     (error as Error).message,
   );
 }
@@ -80,10 +81,10 @@ export function extractWithNode7z(option: {
 
     stream.on("data", (data) => {
       progressBar.update({
-        status: ansiColors.gray("正在解压:"),
+        status: ansiColors.gray(`${t("sevenZip.extracting")}`),
         log: ansiColors.gray(truncateStringMiddleEnhanced(data.file, 50, 50)),
       });
-      L.log(`[7z]正在解压:${data.file}`);
+      L.log(`[7z]${t("sevenZip.extracting")}${data.file}`);
     });
 
     stream.on("progress", (progress) => {
@@ -93,10 +94,10 @@ export function extractWithNode7z(option: {
     stream.on("end", () => {
       progressBar.update(100, {
         percentage: 100,
-        status: ansiColors.green("解压完成"),
+        status: ansiColors.green(t("sevenZip.extractComplete")),
         log: "",
       });
-      L.log(`[7z]解压完成:${zipFilePath}`);
+      L.log(`[7z]${t("sevenZip.extractComplete")}:${zipFilePath}`);
       stream.destroy();
       resolve(true);
     });
