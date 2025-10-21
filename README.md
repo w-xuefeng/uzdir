@@ -6,6 +6,8 @@
 
 A lightweight batch decompression tool for compressed files based on `TypeScript`, `Bun` and `Node-7z`, supporting decompression of various formats of compressed files (such as zip, 7z, etc.) and password-protected file decompression 📦🔑
 
+[简体中文](README-zh_CN.md) | English
+
 ## 🌟 Features
 
 - 📂 Recursively decompress all compressed files in a directory, maintaining the original directory structure

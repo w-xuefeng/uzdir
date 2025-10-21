@@ -1,9 +1,9 @@
 import fs from "fs";
 import path from "path";
-import os from "os";
+import { getLogDir } from "./config";
 
 export class Logger {
-  private logFilePath = path.join(os.homedir(), ".uzdir", "logs");
+  private logFilePath = getLogDir();
   private prefix = "[UZDir::Logger]";
   constructor(options?: {
     logFilePath?: string;

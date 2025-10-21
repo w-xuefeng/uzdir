@@ -1,9 +1,5 @@
-import fs from "fs";
-import path from "path";
-import os from "os";
-
-// 定义语言类型
-export type Language = "zh_CN" | "en_US";
+import { getCurrentLanguage as getConfigLanguage } from "./config";
+import type { Language } from "./types";
 
 // 定义语言包接口
 interface LanguagePack {
@@ -29,7 +25,7 @@ const languagePacks: Record<Language, LanguagePack> = {
       maxConcurrency: "--maxConcurrency <number>",
       maxConcurrencyDescription: "最大并发数，默认为CPU核心数",
       zipFormat: "--zipFormat <formats>",
-      zipFormatDescription: "压缩文件格式，多个格式用逗号分隔，默认为.zip,.rar",
+      zipFormatDescription: "压缩文件格式，多个格式用逗号分隔",
       passwordMap: "--passwordMap <filepath>",
       passwordMapDescription:
         '密码映射JSON文件路径, 文件中为JSON格式，格式为 { "filePath or fileName or fileExtension": "password" }',
@@ -95,6 +91,7 @@ const languagePacks: Record<Language, LanguagePack> = {
       logSeparator: "─".repeat(50),
       processing: "处理中...",
       thread: "线程",
+      errorPrefix: "💥 程序执行出错:",
     },
     sevenZip: {
       ready: "\n📁 UZDir 已经准备就绪\n",
@@ -126,7 +123,7 @@ const languagePacks: Record<Language, LanguagePack> = {
         "Maximum concurrency, default is CPU core count",
       zipFormat: "--zipFormat <formats>",
       zipFormatDescription:
-        "Compressed file formats, multiple formats separated by commas, default is .zip,.rar",
+        "Compressed file formats, multiple formats separated by commas",
       passwordMap: "--passwordMap <filepath>",
       passwordMapDescription:
         'Password mapping JSON file path, file format is JSON: { "filePath or fileName or fileExtension": "password" }',
@@ -194,6 +191,7 @@ const languagePacks: Record<Language, LanguagePack> = {
       logSeparator: "─".repeat(50),
       processing: "Processing...",
       thread: "Thread",
+      errorPrefix: "💥 Program execution error:",
     },
     sevenZip: {
       ready: "\n📁 UZDir is ready\n",
@@ -209,59 +207,12 @@ const languagePacks: Record<Language, LanguagePack> = {
   },
 };
 
-// 配置文件路径
-const configPath = path.join(os.homedir(), ".uzdir", "config.json");
-
-// 获取当前语言设置
-export function getCurrentLanguage(): Language {
-  try {
-    if (fs.existsSync(configPath)) {
-      const configContent = fs.readFileSync(configPath, "utf-8");
-      const config = JSON.parse(configContent);
-      if (config.lang && Object.keys(languagePacks).includes(config.lang)) {
-        return config.lang;
-      }
-    }
-  } catch {
-    // 如果读取配置文件出错，使用默认语言
-    console.warn(
-      "Warning: Could not read language configuration, using default language",
-    );
-  }
-  return "en_US"; // 默认语言
-}
-
-// 设置当前语言
-export function setCurrentLanguage(lang: Language): void {
-  try {
-    // 确保配置目录存在
-    const configDir = path.dirname(configPath);
-    if (!fs.existsSync(configDir)) {
-      fs.mkdirSync(configDir, { recursive: true });
-    }
-
-    // 读取现有配置或创建新配置
-    let config = {};
-    if (fs.existsSync(configPath)) {
-      const configContent = fs.readFileSync(configPath, "utf-8");
-      config = JSON.parse(configContent);
-    }
-
-    // 更新语言设置
-    (config as any).lang = lang;
-
-    // 写入配置文件
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
-  } catch {
-    console.warn("Warning: Could not save language configuration");
-  }
-}
-
 // 获取翻译文本
 export function t(key: string, params: Record<string, any> = {}): string {
-  const lang = getCurrentLanguage();
+  const lang = getConfigLanguage();
   const keys = key.split(".");
-  let value: string | LanguagePack | undefined = languagePacks[lang];
+  let value: string | LanguagePack | undefined =
+    languagePacks[lang as Language];
 
   for (const k of keys) {
     if (value && typeof value === "object" && k in value) {
