@@ -6,10 +6,10 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { UZDir } from "./core.js";
-import { handleUzdirOptions } from "./cli.js";
+import { UZDir } from "./core";
+import { handleUzdirOptions } from "./cli";
 import { t } from "./i18n";
-import type { UZDirParams } from "./types.js";
+import type { UZDirParams } from "./types";
 
 /**
  * UZDir MCP (Model Context Protocol) Server
