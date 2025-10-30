@@ -1,5 +1,8 @@
-// 定义语言类型
 export type Language = "zh_CN" | "en_US";
+
+export interface LanguagePack {
+  [key: string]: string | LanguagePack;
+}
 
 export interface UZDirOptionalParams {
   password: string;

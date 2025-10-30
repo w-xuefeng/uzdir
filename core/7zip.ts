@@ -1,9 +1,9 @@
 import fs from "fs";
 import os from "os";
-import { Logger } from "./logger";
+import { Logger } from "../utils/logger";
 import { path7z } from "7zip-bin-full";
-import { truncateStringMiddleEnhanced } from "./utils";
-import { t } from "./i18n";
+import { truncateStringMiddleEnhanced } from "../utils";
+import { t } from "../locales";
 import ansiColors from "ansi-colors";
 import * as node7z from "node-7z";
 import type cliProgress from "cli-progress";
@@ -26,42 +26,46 @@ const logger = (msg: string, level: "log" | "warn" | "error" = "log") => {
   );
 };
 
-// 确保 path7z 具有执行权限
-try {
-  // 检查文件是否存在以及是否已经有执行权限
-  if (fs.existsSync(path7z)) {
-    // 在 Windows 平台上，可执行文件通常有 .exe 扩展名，且权限模型不同于 Unix
-    if (os.platform() === "win32") {
-      // Windows 平台上检查文件扩展名是否为可执行文件扩展名
-      const isExecutable = path7z.toLowerCase().endsWith(".exe");
-      if (isExecutable) {
-        logger(t("sevenZip.ready"));
+function ensure7ZHasRightPower() {
+  // 确保 path7z 具有执行权限
+  try {
+    // 检查文件是否存在以及是否已经有执行权限
+    if (fs.existsSync(path7z)) {
+      // 在 Windows 平台上，可执行文件通常有 .exe 扩展名，且权限模型不同于 Unix
+      if (os.platform() === "win32") {
+        // Windows 平台上检查文件扩展名是否为可执行文件扩展名
+        const isExecutable = path7z.toLowerCase().endsWith(".exe");
+        if (isExecutable) {
+          logger(t("sevenZip.ready"));
+        } else {
+          // Windows 上重命名文件添加 .exe 扩展名
+          logger(t("sevenZip.missingExtension"), "warn");
+        }
       } else {
-        // Windows 上重命名文件添加 .exe 扩展名
-        logger(t("sevenZip.missingExtension"), "warn");
+        // Unix/Linux/macOS 平台上的处理逻辑
+        const stat = fs.statSync(path7z);
+        // 检查用户是否有执行权限 (UNIX/Linux/macOS)
+        const hasExecutePermission = (stat.mode & 0o100) !== 0;
+
+        if (!hasExecutePermission) {
+          fs.chmodSync(path7z, 0o755);
+          logger(t("sevenZip.permissionSet"));
+        } else {
+          logger(t("sevenZip.ready"));
+        }
       }
     } else {
-      // Unix/Linux/macOS 平台上的处理逻辑
-      const stat = fs.statSync(path7z);
-      // 检查用户是否有执行权限 (UNIX/Linux/macOS)
-      const hasExecutePermission = (stat.mode & 0o100) !== 0;
-
-      if (!hasExecutePermission) {
-        fs.chmodSync(path7z, 0o755);
-        logger(t("sevenZip.permissionSet"));
-      } else {
-        logger(t("sevenZip.ready"));
-      }
+      logger(`${t("sevenZip.fileNotFound")} ${path7z}`, "warn");
     }
-  } else {
-    logger(`${t("sevenZip.fileNotFound")} ${path7z}`, "warn");
+  } catch (error) {
+    logger(
+      `${t("sevenZip.permissionError")} ${(error as Error).message}`,
+      "warn",
+    );
   }
-} catch (error) {
-  logger(
-    `${t("sevenZip.permissionError")} ${(error as Error).message}`,
-    "warn",
-  );
 }
+
+ensure7ZHasRightPower();
 
 export function extractWithNode7z(option: {
   zipFilePath: string;
@@ -83,19 +87,16 @@ export function extractWithNode7z(option: {
   const { resolve, reject, promise } = Promise.withResolvers();
 
   try {
-    const stream = fullpath
-      ? node7z.extractFull(zipFilePath, outputDir, {
+    const stream = (fullpath ? node7z.extractFull : node7z.extract)(
+      zipFilePath,
+      outputDir,
+      {
         $bin: path7z,
         password: password,
         recursive: true,
         $progress: true,
-      })
-      : node7z.extract(zipFilePath, outputDir, {
-        $bin: path7z,
-        password: password,
-        recursive: true,
-        $progress: true,
-      });
+      },
+    );
 
     stream.on("data", (data) => {
       progressBar?.update({

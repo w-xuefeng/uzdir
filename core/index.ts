@@ -8,11 +8,11 @@ import { extractWithNode7z } from "./7zip";
 import {
   formatMillisecondsToTime,
   truncateStringMiddleEnhanced,
-} from "./utils";
-import { Logger } from "./logger";
-import { t } from "./i18n";
-import { CPU_COUNTS } from "./config";
-import type { UZDirOptions } from "./types";
+} from "../utils";
+import { Logger } from "../utils/logger";
+import { t } from "../locales";
+import { CPU_COUNTS } from "../config";
+import type { UZDirOptions } from "../types";
 
 const progressBarPreset = {
   format: `\r{title} ${
@@ -683,7 +683,7 @@ export class UZDir {
       const durationMs = this.endTime.getTime() - this.startTime.getTime();
       return formatMillisecondsToTime(durationMs);
     }
-    return "未知";
+    return t("messages.unknown");
   }
 
   /**

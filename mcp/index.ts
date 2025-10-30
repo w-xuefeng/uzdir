@@ -6,10 +6,10 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { UZDir } from "./core";
-import { handleUzdirOptions } from "./cli";
-import { t } from "./i18n";
-import type { UZDirParams } from "./types";
+import { UZDir } from "../core";
+import { handleUzdirOptions } from "../cli";
+import { t } from "../locales";
+import type { UZDirParams } from "../types";
 
 /**
  * UZDir MCP (Model Context Protocol) Server
@@ -25,7 +25,7 @@ import type { UZDirParams } from "./types";
 export async function runMCPServer() {
   // 动态导入 package.json 获取版本号
   const pkg = await import(
-    path.join(import.meta.dirname, "package.json"),
+    path.join(import.meta.dirname, "..", "package.json"),
     {
       assert: { type: "json" },
     }

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { getLogDir } from "./config";
+import { getLogDir } from "../config";
 
 export class Logger {
   private logFilePath = getLogDir();

@@ -1,10 +1,10 @@
 import os from "os";
 import { Command } from "commander";
-import { getAvailableLanguages, t } from "./i18n";
-import { CPU_COUNTS, setCurrentLanguage } from "./config";
-import { UZDir } from "./core";
-import pkg from "./package.json" with { type: "json" };
-import type { Language, UZDirOptions, UZDirParams } from "./types";
+import { getAvailableLanguages, t } from "../locales";
+import { CPU_COUNTS, setCurrentLanguage } from "../config";
+import { UZDir } from "../core";
+import pkg from "../package.json" with { type: "json" };
+import type { Language, UZDirOptions, UZDirParams } from "../types";
 
 /**
  * 设置语言命令处理

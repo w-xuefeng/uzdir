@@ -2,7 +2,7 @@
 
 import { handleLanguageCommand, initCLI } from "./cli";
 import { runMCPServer } from "./mcp";
-import { t } from "./i18n";
+import { t } from "./locales";
 
 // 检查是否是语言切换命令
 if (process.argv[2] === "lang") {
