@@ -12,7 +12,7 @@ import {
 import { Logger } from "../utils/logger";
 import { t } from "../locales";
 import { CPU_COUNTS } from "../config";
-import type { UZDirOptions } from "../types";
+import type { ProcessBar, ProgressBarController, UZDirOptions } from "../types";
 
 const progressBarPreset = {
   format: `\r{title} ${
@@ -45,6 +45,7 @@ export class UZDir {
   private ignorePattern: string | null;
   private withLog: boolean;
   private logVisible: boolean = true;
+  private progressController: ProgressBarController | null = null;
   private L = new Logger();
 
   private multiProgressBar = new cliProgress.MultiBar(
@@ -70,6 +71,7 @@ export class UZDir {
       ignorePattern = null,
       withLog = false,
       logVisible = true,
+      progressController = null,
     } = options;
 
     this.inputDir = path.resolve(inputDir);
@@ -82,6 +84,7 @@ export class UZDir {
     this.ignorePattern = ignorePattern;
     this.withLog = withLog;
     this.logVisible = logVisible;
+    this.progressController = progressController;
 
     if (this.withLog) {
       this.L.setFilePath(this.outputDir);
@@ -315,7 +318,7 @@ export class UZDir {
     currentIndex: number,
     total: number,
     concurrencyNumber: number = 1,
-    progressBar: cliProgress.SingleBar | null,
+    progressBar: ProcessBar,
   ): Promise<boolean> {
     const relativePath = this.getRelativePath(zipFilePath);
     const outputPath = this.createOutputStructure(relativePath);
@@ -512,17 +515,20 @@ export class UZDir {
       (e) => ansiColors.white(e),
     );
 
+    // 创建进度条数组
     const progressBars = Array.from(
       { length: concurrency },
-      () =>
-        this.logVisible
-          ? this.multiProgressBar.create(100, 0, {
+      () => {
+        if (this.progressController) {
+          return this.progressController.createProgressBar(100, 0, {
             title: "",
             percentage: 0,
             status: t("messages.processing"),
             log: "\t",
-          })
-          : null,
+          });
+        }
+        return null;
+      },
     );
 
     // 实现连续任务调度逻辑 - 当任何任务完成时，如果有剩余任务则立即开始执行
@@ -560,8 +566,20 @@ export class UZDir {
     // 等待所有任务完成
     await Promise.allSettled(workers);
 
-    progressBars.forEach((bar) => bar?.stop());
-    this.multiProgressBar.stop();
+    // 停止所有进度条
+    progressBars.forEach((bar) => {
+      if (
+        typeof this.progressController?.stopProgressBar === "function" && bar
+      ) {
+        this.progressController.stopProgressBar(bar);
+      } else if (typeof bar?.stop === "function") {
+        bar.stop();
+      }
+    });
+
+    if (typeof this.progressController?.stopAll === "function") {
+      this.progressController.stopAll();
+    }
 
     // 输出总结
     this.L.log(

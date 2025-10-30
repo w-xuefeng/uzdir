@@ -1,3 +1,24 @@
+import type cliProgress from "cli-progress";
+
+export interface SimpleProgressSingleBar extends Record<string, any> {
+  update(current: number, payload?: object): void;
+  update(payload: object): void;
+}
+
+export type ProcessBar = cliProgress.SingleBar | SimpleProgressSingleBar | null;
+
+export interface ProgressBarController {
+  createProgressBar: (
+    total: number,
+    initial: number,
+    payload?: any,
+  ) => ProcessBar;
+  stopProgressBar?: (
+    bar: ProcessBar,
+  ) => void;
+  stopAll?: () => void;
+}
+
 export type Language = "zh_CN" | "en_US";
 
 export interface LanguagePack {
@@ -32,4 +53,5 @@ export interface UZDirOptions {
   ignorePattern: string | null;
   withLog: boolean;
   logVisible?: boolean;
+  progressController?: ProgressBarController | null;
 }

@@ -6,7 +6,7 @@ import { truncateStringMiddleEnhanced } from "../utils";
 import { t } from "../locales";
 import ansiColors from "ansi-colors";
 import * as node7z from "node-7z";
-import type cliProgress from "cli-progress";
+import type { ProcessBar } from "../types";
 
 const isMCPCalling = process.argv[2] === "mcp";
 const logger = (msg: string, level: "log" | "warn" | "error" = "log") => {
@@ -73,7 +73,7 @@ export function extractWithNode7z(option: {
   password: string;
   relativePath: string;
   fullpath: boolean;
-  progressBar: cliProgress.SingleBar | null;
+  progressBar: ProcessBar;
   L: Logger;
 }) {
   const {

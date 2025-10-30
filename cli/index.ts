@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { getAvailableLanguages, t } from "../locales";
 import { CPU_COUNTS, setCurrentLanguage } from "../config";
 import { UZDir } from "../core";
+import { cliProgressController } from "./progress-controller";
 import pkg from "../package.json" with { type: "json" };
 import type { Language, UZDirOptions, UZDirParams } from "../types";
 
@@ -71,12 +72,21 @@ export function handleUzdirOptions(options: UZDirParams): UZDirOptions {
   return uzdirOptions;
 }
 
+export function withCliProcessBarOptions(options: UZDirOptions): UZDirOptions {
+  return {
+    ...options,
+    progressController: cliProgressController,
+  };
+}
+
 /**
  * 主命令处理
  */
 export function handleMainCommand(options: UZDirParams): void {
   try {
-    const extractor = new UZDir(handleUzdirOptions(options));
+    const extractor = new UZDir(
+      withCliProcessBarOptions(handleUzdirOptions(options)),
+    );
     extractor.extractAll().catch((error) => {
       console.error(`${t("messages.errorPrefix")}`, error);
       process.exit(1);
