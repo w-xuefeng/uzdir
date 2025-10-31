@@ -12,7 +12,11 @@ import {
 import { Logger } from "../utils/logger";
 import { t } from "../locales";
 import { CPU_COUNTS } from "../config";
-import type { ProcessBar, ProgressBarController, UZDirOptions } from "../types";
+import type {
+  ProgressBar,
+  ProgressBarController,
+  UZDirOptions,
+} from "../types";
 
 const progressBarPreset = {
   format: `\r{title} ${
@@ -318,7 +322,7 @@ export class UZDir {
     currentIndex: number,
     total: number,
     concurrencyNumber: number = 1,
-    progressBar: ProcessBar,
+    progressBar: ProgressBar,
   ): Promise<boolean> {
     const relativePath = this.getRelativePath(zipFilePath);
     const outputPath = this.createOutputStructure(relativePath);

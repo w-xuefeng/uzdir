@@ -1,6 +1,6 @@
 import cliProgress from "cli-progress";
 import colors from "ansi-colors";
-import type { ProcessBar } from "../types";
+import type { ProgressBar } from "../types";
 
 const progressBarPreset = {
   format: `\r{title} ${
@@ -27,7 +27,7 @@ export const cliProgressController = {
     return this.multiProgressBar.create(total, initial, payload);
   },
 
-  stopProgressBar: function (bar: ProcessBar | null) {
+  stopProgressBar: function (bar: ProgressBar | null) {
     if (typeof bar?.stop === "function") {
       bar.stop();
     }
